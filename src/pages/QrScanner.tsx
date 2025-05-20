@@ -43,16 +43,26 @@ const QrScannerPage: React.FC = () => {
 
   const handleScan = async (participantId: string, activityId: string | null) => {
     if (!eventId) return;
-    
+
     try {
-      // Create activity log
+      let actualActivityId = activityId;
+
+      // For return scans, fetch the participant’s last activity
+      if (scanType === 'return') {
+        const lastActivity = await getParticipantCurrentActivity(participantId);
+        if (!lastActivity) {
+          throw new Error('Participant is not currently checked out to any activity.');
+        }
+        actualActivityId = lastActivity.id;
+      }
+
       await createActivityLog({
         participantId,
-        activityId,
-        leaderId: 'current-user-id', // In a real app, get this from auth context
+        activityId: actualActivityId,
+        leaderId: 'current-user-id', // Replace with actual user context later
         type: scanType,
       });
-      
+
       return true;
     } catch (err) {
       console.error('Error recording scan:', err);
