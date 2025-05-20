@@ -10,6 +10,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { 
   getParticipantsByEvent, 
   getActivitiesByEvent,
+  getEventById,
   getParticipantsByActivityId,
   getParticipantsAtCamp,
   resetTestData
@@ -58,16 +59,8 @@ const EventDetail: React.FC = () => {
         }
         setParticipantsByActivity(byActivityData);
         
-        // Mock event data (in a real app, we'd fetch this from Firestore)
-        setEvent({
-          id: eventId,
-          name: 'Camp 2023',
-          year: 2023,
-          startDate: new Date('2023-06-15'),
-          endDate: new Date('2023-06-30'),
-          createdAt: new Date(),
-          createdBy: 'admin',
-        });
+        const eventData = await getEventById(eventId);
+        setEvent(eventData);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
