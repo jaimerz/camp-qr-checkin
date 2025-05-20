@@ -29,6 +29,7 @@ const EventDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(false);
   const [generatingQrCodes, setGeneratingQrCodes] = useState(false);
+  const [activeTabId, setActiveTabId] = useState<string>('overview');
 
   const fetchData = async () => {
     if (!eventId) return;
@@ -425,7 +426,11 @@ const EventDetail: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
         </div>
         
-        <Tabs tabs={tabs} defaultTabId="overview" />
+        <Tabs 
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onTabChange={(id) => setActiveTabId(id)}
+        />
       </div>
     </AuthGuard>
   );
