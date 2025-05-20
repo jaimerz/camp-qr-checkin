@@ -2,7 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import AuthGuard from '../components/AuthGuard';
-import { getActivitiesByEvent, getParticipantByQrCode, getParticipantCurrentActivity, createActivityLog } from '../utils/firebase';
+import {
+  getActivitiesByEvent,
+  getParticipantByQrCode,
+  getParticipantCurrentActivity,
+  createActivityLog,
+} from '../utils/firebase';
 import { Activity, Participant } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import QrScanner from '../components/QrScanner';
@@ -21,12 +26,12 @@ const QrScannerPage: React.FC = () => {
   useEffect(() => {
     const fetchActivities = async () => {
       if (!eventId) return;
-      
+
       setLoading(true);
       try {
         const activitiesData = await getActivitiesByEvent(eventId);
         setActivities(activitiesData);
-        
+
         if (activitiesData.length > 0) {
           setSelectedActivityId(activitiesData[0].id);
         }
@@ -37,32 +42,35 @@ const QrScannerPage: React.FC = () => {
         setLoading(false);
       }
     };
-    
+
     fetchActivities();
   }, [eventId]);
 
-  const handleScan = async (participantId: string, activityId: string | null) => {
+  const handleScan = async (participantId: string, _activityId: string | null) => {
     if (!eventId) return;
 
     try {
-      let actualActivityId = activityId;
+      let actualActivityId = _activityId;
 
-      // For return scans, fetch the participant’s last activity
       if (scanType === 'return') {
         const lastActivity = await getParticipantCurrentActivity(participantId);
+        console.log('[RETURN SCAN] Last known activity:', lastActivity);
+
         if (!lastActivity) {
           throw new Error('Participant is not currently checked out to any activity.');
         }
+
         actualActivityId = lastActivity.id;
       }
 
       await createActivityLog({
         participantId,
         activityId: actualActivityId,
-        leaderId: 'current-user-id', // Replace with actual user context later
+        leaderId: 'current-user-id', // TODO: replace with actual auth user context
         type: scanType,
       });
 
+      console.log(`[SCAN SUCCESS] ${scanType} for ${participantId} to activity ${actualActivityId}`);
       return true;
     } catch (err) {
       console.error('Error recording scan:', err);
@@ -72,7 +80,7 @@ const QrScannerPage: React.FC = () => {
 
   const getParticipantInfo = async (participantId: string): Promise<Participant | null> => {
     if (!eventId) return null;
-    
+
     try {
       return await getParticipantByQrCode(participantId, eventId);
     } catch (err) {
@@ -131,13 +139,13 @@ const QrScannerPage: React.FC = () => {
     );
   }
 
-  const selectedActivity = activities.find(a => a.id === selectedActivityId) || null;
+  const selectedActivity = activities.find((a) => a.id === selectedActivityId) || null;
 
   return (
     <AuthGuard>
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">QR Scanner</h1>
-        
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Scan Settings</CardTitle>
@@ -154,7 +162,7 @@ const QrScannerPage: React.FC = () => {
                   { value: 'return', label: 'Return (Coming Back to Camp)' },
                 ]}
               />
-              
+
               {scanType === 'departure' && (
                 <Select
                   label="Activity"
@@ -170,7 +178,7 @@ const QrScannerPage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <QrScanner
           activities={activities}
           selectedActivity={selectedActivity}
