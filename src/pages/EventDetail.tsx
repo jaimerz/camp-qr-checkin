@@ -30,44 +30,44 @@ const EventDetail: React.FC = () => {
   const [resetting, setResetting] = useState(false);
   const [generatingQrCodes, setGeneratingQrCodes] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!eventId) return;
+  const fetchData = async () => {
+    if (!eventId) return;
 
-      setLoading(true);
-      try {
-        // Fetch event details
-        // For simplicity, we'll fetch from the participants and activities
+    setLoading(true);
+    try {
+      // Fetch event details
+      // For simplicity, we'll fetch from the participants and activities
         
-        // Fetch participants
-        const participantsData = await getParticipantsByEvent(eventId);
-        setParticipants(participantsData);
-        
-        // Fetch activities
-        const activitiesData = await getActivitiesByEvent(eventId);
-        setActivities(activitiesData);
-        
-        // Fetch participants at camp
-        const atCampData = await getParticipantsAtCamp(eventId);
-        setParticipantsAtCamp(atCampData);
-        
-        // Fetch participants by activity
-        const byActivityData: Record<string, Participant[]> = {};
-        for (const activity of activitiesData) {
-          const activityParticipants = await getParticipantsByActivityId(activity.id);
-          byActivityData[activity.id] = activityParticipants;
-        }
-        setParticipantsByActivity(byActivityData);
-        
-        const eventData = await getEventById(eventId);
-        setEvent(eventData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
+      // Fetch participants
+      const participantsData = await getParticipantsByEvent(eventId);
+      setParticipants(participantsData);
+
+      // Fetch activities
+      const activitiesData = await getActivitiesByEvent(eventId);
+      setActivities(activitiesData);
+
+      // Fetch participants at camp
+      const atCampData = await getParticipantsAtCamp(eventId);
+      setParticipantsAtCamp(atCampData);
+
+      // Fetch participants by activity
+      const byActivityData: Record<string, Participant[]> = {};
+      for (const activity of activitiesData) {
+        const activityParticipants = await getParticipantsByActivityId(activity.id);
+        byActivityData[activity.id] = activityParticipants;
       }
-    };
+      setParticipantsByActivity(byActivityData);
 
+      const eventData = await getEventById(eventId);
+      setEvent(eventData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };  
+  
+  useEffect(() => {
     fetchData();
   }, [eventId]);
 
@@ -224,6 +224,13 @@ const EventDetail: React.FC = () => {
       label: 'By Location',
       content: (
         <div className="space-y-6">
+          <div className="flex justify-end mb-4">
+            <Button variant="outline" size="sm" onClick={fetchData}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Sync View
+            </Button>
+          </div>
+          
           <Card>
             <CardHeader>
               <CardTitle>At Camp</CardTitle>
@@ -289,6 +296,13 @@ const EventDetail: React.FC = () => {
       label: 'Participants',
       content: (
         <div className="space-y-6">
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={fetchData}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Sync View
+            </Button>
+          </div>
+          
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>All Participants</CardTitle>
