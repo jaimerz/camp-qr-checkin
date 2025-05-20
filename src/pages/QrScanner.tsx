@@ -63,10 +63,31 @@ const QrScannerPage: React.FC = () => {
         actualActivityId = lastActivity.id;
       }
 
+      // Enforce single active activity at a time
+      if (scanType === 'departure') {
+        const currentActivity = await getParticipantCurrentActivity(participantId);
+
+        if (currentActivity) {
+          if (currentActivity.id === activityId) {
+            alert('⚠️ Student is already registered for this activity.');
+            return false;
+          }
+
+          // Auto-log return from old activity
+          await createActivityLog({
+            participantId,
+            activityId: currentActivity.id,
+            leaderId: 'current-user-id', // Replace with actual leader ID
+            type: 'return',
+          });
+        }
+      }
+
+      // Proceed to log scan
       await createActivityLog({
         participantId,
-        activityId: actualActivityId,
-        leaderId: 'current-user-id', // TODO: replace with actual auth user context
+        activityId: scanType === 'departure' ? activityId : null,
+        leaderId: 'current-user-id',
         type: scanType,
       });
 
