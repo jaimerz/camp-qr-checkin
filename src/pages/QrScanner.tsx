@@ -59,31 +59,48 @@ const QrScannerPage: React.FC = () => {
             return false;
           }
 
-          // Auto-return from previous activity
+          // Auto-return from the previous activity before leaving to a new one
           await createActivityLog({
             participantId,
             activityId: currentActivity.id,
-            leaderId: 'current-user-id', // Replace with actual user id if available
+            leaderId: 'current-user-id', // Replace with actual leader ID if available
             type: 'return',
           });
         }
+
+        // Now log new departure
+        await createActivityLog({
+          participantId,
+          activityId,
+          leaderId: 'current-user-id',
+          type: 'departure',
+        });
       }
 
-      // Log the new scan (departure or return)
-      await createActivityLog({
-        participantId,
-        activityId,
-        leaderId: 'current-user-id', // Replace with actual user id if available
-        type: scanType,
-      });
+      if (scanType === 'return') {
+        const currentActivity = await getParticipantCurrentActivity(participantId);
+
+        if (!currentActivity) {
+          alert('⚠️ Participant is already at camp.');
+          return false;
+        }
+
+        // Log return from current activity
+        await createActivityLog({
+          participantId,
+          activityId: currentActivity.id,
+          leaderId: 'current-user-id',
+          type: 'return',
+        });
+      }
 
       return true;
     } catch (err) {
-      console.error('Error recording scan:', err);
+     console.error('Error recording scan:', err);
       throw err;
     }
   };
-
+  
   const getParticipantInfo = async (participantId: string): Promise<Participant | null> => {
     if (!eventId) return null;
 
