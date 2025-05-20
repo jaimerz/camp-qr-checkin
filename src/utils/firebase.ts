@@ -367,61 +367,52 @@ export async function getParticipantsByChurch(church: string, eventId: string) {
 }
 
 export async function getParticipantsByActivityId(activityId: string) {
-  const activityLogsQuery = query(
+  const allLogsQuery = query(
     collection(db, 'activityLogs'),
-    where('activityId', '==', activityId),
-    where('type', '==', 'departure')
+    where('activityId', '==', activityId)
   );
-  
-  const returnLogsQuery = query(
-    collection(db, 'activityLogs'),
-    where('activityId', '==', activityId),
-    where('type', '==', 'return')
-  );
-  
-  const [departureLogsSnapshot, returnLogsSnapshot] = await Promise.all([
-    getDocs(activityLogsQuery),
-    getDocs(returnLogsQuery)
-  ]);
-  
-  const departed = new Set<string>();
-  const returned = new Set<string>();
 
-  departureLogsSnapshot.forEach((doc) => {
+  const allLogsSnapshot = await getDocs(allLogsQuery);
+
+  const logsByParticipant: Record<string, ActivityLog[]> = {};
+
+  allLogsSnapshot.forEach((doc) => {
     const log = doc.data() as ActivityLog;
-    departed.add(`${log.participantId}|${log.activityId}`);
+    if (!logsByParticipant[log.participantId]) {
+      logsByParticipant[log.participantId] = [];
+    }
+    logsByParticipant[log.participantId].push(log);
   });
 
-  returnLogsSnapshot.forEach((doc) => {
-    const log = doc.data() as ActivityLog;
-    returned.add(`${log.participantId}|${log.activityId}`);
-  });
+  // Determine which participants are currently at the activity
+  const activeParticipantIds = Object.entries(logsByParticipant)
+    .filter(([_, logs]) => {
+      const sorted = logs.sort((a, b) =>
+        (a.timestamp as Timestamp).toDate().getTime() - (b.timestamp as Timestamp).toDate().getTime()
+      );
+      const last = sorted[sorted.length - 1];
+      return last.type === 'departure';
+    })
+    .map(([participantId]) => participantId);
 
-  const activeKeys = [...departed].filter((key) => !returned.has(key));
-  const activeParticipantIds = activeKeys.map((key) => key.split('|')[0]);
-  
-  if (activeParticipantIds.length === 0) {
-    return [];
-  }
-  
+  if (activeParticipantIds.length === 0) return [];
+
   // Get participant details for active participants
   const participants: Participant[] = [];
-  
+
   for (const id of activeParticipantIds) {
     const participantDoc = await getDoc(doc(db, 'participants', id));
-    
     if (participantDoc.exists()) {
       const participantData = participantDoc.data() as Omit<Participant, 'createdAt'> & {
         createdAt: Timestamp;
       };
-      
       participants.push({
         ...participantData,
         createdAt: participantData.createdAt.toDate(),
       });
     }
   }
-  
+
   return participants;
 }
 
