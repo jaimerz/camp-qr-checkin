@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard';
 import EventDetail from './pages/EventDetail';
 import QrScanner from './pages/QrScanner';
 import ParticipantImport from './pages/ParticipantImport';
+import NewActivity from './pages/NewActivity';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/events/:eventId" element={<EventDetail />} />
           <Route path="/scan/:eventId" element={<QrScanner />} />
           <Route path="/participants/import/:eventId" element={<ParticipantImport />} />
+          <Route path="/activities/new/:eventId" element={<NewActivity />} />
         </Route>
       </Routes>
     </Router>
