@@ -384,23 +384,21 @@ export async function getParticipantsByActivityId(activityId: string) {
     getDocs(returnLogsQuery)
   ]);
   
-  const departureParticipantIds = new Set<string>();
-  const returnParticipantIds = new Set<string>();
-  
+  const departed = new Set<string>();
+  const returned = new Set<string>();
+
   departureLogsSnapshot.forEach((doc) => {
     const log = doc.data() as ActivityLog;
-    departureParticipantIds.add(log.participantId);
+    departed.add(`${log.participantId}|${log.activityId}`);
   });
-  
+
   returnLogsSnapshot.forEach((doc) => {
     const log = doc.data() as ActivityLog;
-    returnParticipantIds.add(log.participantId);
+    returned.add(`${log.participantId}|${log.activityId}`);
   });
-  
-  // Get participants who have departed but not returned
-  const activeParticipantIds = [...departureParticipantIds].filter(
-    (id) => !returnParticipantIds.has(id)
-  );
+
+  const activeKeys = [...departed].filter((key) => !returned.has(key));
+  const activeParticipantIds = activeKeys.map((key) => key.split('|')[0]);
   
   if (activeParticipantIds.length === 0) {
     return [];
