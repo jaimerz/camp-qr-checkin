@@ -87,13 +87,14 @@ export async function getEvents() {
   const events: Event[] = [];
   
   eventsSnapshot.forEach((doc) => {
-    const eventData = doc.data() as Omit<Event, 'createdAt' | 'startDate' | 'endDate'> & {
+    const eventData = doc.data() as Omit<Event, 'id' | 'createdAt' | 'startDate' | 'endDate'> & {
       createdAt: Timestamp;
       startDate: Timestamp;
       endDate: Timestamp;
     };
     
     events.push({
+      id: doc.id,
       ...eventData,
       createdAt: eventData.createdAt.toDate(),
       startDate: eventData.startDate.toDate(),
