@@ -104,6 +104,29 @@ export async function getEvents() {
   return events;
 }
 
+export async function getEventById(eventId: string): Promise<Event> {
+  const eventRef = doc(db, 'events', eventId);
+  const snapshot = await getDoc(eventRef);
+
+  if (!snapshot.exists()) {
+    throw new Error('Event not found');
+  }
+
+  const data = snapshot.data() as Omit<Event, 'startDate' | 'endDate' | 'createdAt'> & {
+    startDate: Timestamp;
+    endDate: Timestamp;
+    createdAt: Timestamp;
+  };
+
+  return {
+    id: snapshot.id,
+    ...data,
+    startDate: data.startDate.toDate(),
+    endDate: data.endDate.toDate(),
+    createdAt: data.createdAt.toDate(),
+  };
+}
+
 // Participant related functions
 
 export async function createParticipant(participant: Omit<Participant, 'id' | 'createdAt'>) {
