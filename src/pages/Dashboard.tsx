@@ -135,7 +135,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <p className="text-sm text-gray-500">
-                        Date: {new Date(event.startDate).toLocaleDateString()} - {new Date(event.endDate).toLocaleDateString()}
+                        Date: {event.startDate.toLocaleDateString()} – {event.endDate.toLocaleDateString()}
                       </p>
                     </div>
                   </CardContent>
