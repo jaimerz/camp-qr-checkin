@@ -71,6 +71,24 @@ const EventDetail: React.FC = () => {
     fetchData();
   }, [eventId]);
 
+  const refreshLiveData = async () => {
+    if (!eventId) return;
+
+    try {
+      const atCampData = await getParticipantsAtCamp(eventId);
+      setParticipantsAtCamp(atCampData);
+    
+      const byActivityData: Record<string, Participant[]> = {};
+      for (const activity of activities) {
+        const activityParticipants = await getParticipantsByActivityId(activity.id);
+        byActivityData[activity.id] = activityParticipants;
+      }
+      setParticipantsByActivity(byActivityData);
+    } catch (error) {
+      console.error('Error refreshing live data:', error);
+    }
+  };
+
   const handleGenerateQrCodes = async () => {
     if (!participants.length) return;
     
@@ -101,15 +119,7 @@ const EventDetail: React.FC = () => {
       await resetTestData(eventId);
       
       // Refresh data
-      const atCampData = await getParticipantsAtCamp(eventId);
-      setParticipantsAtCamp(atCampData);
-      
-      const byActivityData: Record<string, Participant[]> = {};
-      for (const activity of activities) {
-        const activityParticipants = await getParticipantsByActivityId(activity.id);
-        byActivityData[activity.id] = activityParticipants;
-      }
-      setParticipantsByActivity(byActivityData);
+      await refreshLiveData();
     } catch (error) {
       console.error('Error resetting test data:', error);
     } finally {
