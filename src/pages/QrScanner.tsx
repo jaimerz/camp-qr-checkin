@@ -46,52 +46,37 @@ const QrScannerPage: React.FC = () => {
     fetchActivities();
   }, [eventId]);
 
-  const handleScan = async (participantId: string, _activityId: string | null) => {
+  const handleScan = async (participantId: string, activityId: string | null) => {
     if (!eventId) return;
 
     try {
-      let actualActivityId = _activityId;
-
-      if (scanType === 'return') {
-        const lastActivity = await getParticipantCurrentActivity(participantId);
-        console.log('[RETURN SCAN] Last known activity:', lastActivity);
-
-        if (!lastActivity) {
-          throw new Error('Participant is not currently checked out to any activity.');
-        }
-
-        actualActivityId = lastActivity.id;
-      }
-
-      // Enforce single active activity at a time
       if (scanType === 'departure') {
         const currentActivity = await getParticipantCurrentActivity(participantId);
 
         if (currentActivity) {
           if (currentActivity.id === activityId) {
-            alert('⚠️ Student is already registered for this activity.');
+            alert('⚠️ Participant is already at this activity.');
             return false;
           }
 
-          // Auto-log return from old activity
+          // Auto-return from previous activity
           await createActivityLog({
             participantId,
             activityId: currentActivity.id,
-            leaderId: 'current-user-id', // Replace with actual leader ID
+            leaderId: 'current-user-id', // Replace with actual user id if available
             type: 'return',
           });
         }
       }
 
-      // Proceed to log scan
+      // Log the new scan (departure or return)
       await createActivityLog({
         participantId,
-        activityId: scanType === 'departure' ? activityId : null,
-        leaderId: 'current-user-id',
+        activityId,
+        leaderId: 'current-user-id', // Replace with actual user id if available
         type: scanType,
       });
 
-      console.log(`[SCAN SUCCESS] ${scanType} for ${participantId} to activity ${actualActivityId}`);
       return true;
     } catch (err) {
       console.error('Error recording scan:', err);
