@@ -82,7 +82,13 @@ const ParticipantDetail: React.FC = () => {
                 {logs.map((log) => (
                   <li key={log.id} className="border rounded-md p-3 text-sm">
                     <div className="flex justify-between">
-                      <span>{log.type === 'departure' ? '🚶‍♂️ Left for' : '🏕️ Returned from'} <strong>{log.activityName || log.activityId}</strong></span>
+                      <span>
+                        {log.type === 'change'
+                          ? <>🔁 Changed from <strong>{log.fromActivityName || log.fromActivityId}</strong> to <strong>{log.activityName || log.activityId}</strong></>
+                          : log.type === 'departure'
+                          ? <>🚶‍♂️ Left for <strong>{log.activityName || log.activityId}</strong></>
+                          : <>🏕️ Returned from <strong>{log.activityName || log.activityId}</strong></>}
+                      </span>
                       <span className="text-gray-400">{formatDateTime(log.timestamp)}</span>
                     </div>
                     {log.leaderName && (
