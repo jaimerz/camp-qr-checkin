@@ -310,17 +310,16 @@ export async function getParticipantActivityLogs(participantId: string) {
   const activityLogsSnapshot = await getDocs(activityLogsQuery);
   const activityLogs: (ActivityLog & { leaderName?: string; activityName?: string })[] = [];
   
-  for (const doc of activityLogsSnapshot.docs) {
-    const activityLogData = doc.data() as Omit<ActivityLog, 'timestamp'> & {
+  for (const snap of activityLogsSnapshot.docs) {
+    const activityLogData = snap.data() as Omit<ActivityLog, 'timestamp'> & {
       timestamp: Timestamp;
     };
-    
+
     const log: ActivityLog & { leaderName?: string; activityName?: string } = {
       ...activityLogData,
       timestamp: (activityLogData.timestamp as Timestamp).toDate(),
     };
-    
-    // Get leader name
+
     if (log.leaderId) {
       const leaderRef = doc(db, 'users', log.leaderId);
       const leaderSnap = await getDoc(leaderRef);
@@ -329,7 +328,6 @@ export async function getParticipantActivityLogs(participantId: string) {
       }
     }
 
-    // Get activity name if activityId is not null
     if (log.activityId) {
       const activityRef = doc(db, 'activities', log.activityId);
       const activitySnap = await getDoc(activityRef);
@@ -337,7 +335,7 @@ export async function getParticipantActivityLogs(participantId: string) {
         log.activityName = (activitySnap.data() as Activity).name;
       }
     }
-    
+
     activityLogs.push(log);
   }
   
