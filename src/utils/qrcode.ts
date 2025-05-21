@@ -55,6 +55,9 @@ export async function generateQRCodePDF(participants: Participant[]): Promise<Bl
   let col = 0;
   let row = 0;
 
+  // Sort participants by church name
+  participants.sort((a, b) => a.church.localeCompare(b.church));
+
   for (let i = 0; i < participants.length; i++) {
     const p = participants[i];
     const qrDataUrl = await generateParticipantQRCode(p);
