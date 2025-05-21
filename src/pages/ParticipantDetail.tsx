@@ -36,7 +36,7 @@ const ParticipantDetail: React.FC = () => {
       }
     };
     fetchData();
-  }, [eventId, participantId]);
+  }, [eventId, qrCode]);
 
   if (loading) return <LoadingSpinner />;
 
