@@ -37,74 +37,75 @@ export async function generateQRCodePDF(participants: Participant[]): Promise<Bl
     unit: 'mm',
     format: 'a4',
   });
-  
+
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  
-  // Define dimensions
-  const margin = 10;
-  const qrCodeSize = 50;
-  const badgeWidth = 85;
-  const badgeHeight = 55;
-  const columns = 2;
-  const rows = 5;
-  
-  let currentPage = 1;
-  let x = margin;
-  let y = margin;
-  
-  // Draw border for first page
-  doc.setDrawColor(200);
-  doc.rect(5, 5, pageWidth - 10, pageHeight - 10);
-  
+
+  // Layout config
+  const badgeWidth = 65;
+  const badgeHeight = 70;
+  const qrSize = 35;
+  const columns = 3;
+  const rows = 4;
+  const marginX = 10;
+  const marginY = 10;
+  const spacingX = (pageWidth - marginX * 2 - badgeWidth * columns) / (columns - 1);
+  const spacingY = 5;
+
+  let col = 0;
+  let row = 0;
+
   for (let i = 0; i < participants.length; i++) {
-    const participant = participants[i];
-    
-    // Generate QR code data URL
-    const qrCodeDataUrl = await generateParticipantQRCode(participant);
-    
-    // Calculate position
+    const p = participants[i];
+    const qrDataUrl = await generateParticipantQRCode(p);
+
     if (i > 0 && i % (columns * rows) === 0) {
-      // Add new page
       doc.addPage();
-      currentPage++;
-      x = margin;
-      y = margin;
-      
-      // Draw border for new page
-      doc.setDrawColor(200);
-      doc.rect(5, 5, pageWidth - 10, pageHeight - 10);
-    } else if (i > 0 && i % columns === 0) {
-      // New row
-      x = margin;
-      y += badgeHeight;
+      col = 0;
+      row = 0;
     }
-    
-    // Draw badge rectangle
-    doc.setDrawColor(100);
-    doc.setFillColor(245, 245, 245);
+
+    const x = marginX + col * (badgeWidth + spacingX);
+    const y = marginY + row * (badgeHeight + spacingY);
+    const centerX = x + badgeWidth / 2;
+
+    // Badge background
+    doc.setDrawColor(180);
+    doc.setFillColor(255, 255, 255);
     doc.roundedRect(x, y, badgeWidth, badgeHeight, 3, 3, 'FD');
-    
-    // Add QR code
-    doc.addImage(qrCodeDataUrl, 'PNG', x + 5, y + 5, qrCodeSize, qrCodeSize);
-    
-    // Add participant name
+
+    let cursorY = y + 8;
+
+    // QR Code (centered)
+    doc.addImage(qrDataUrl, 'PNG', centerX - qrSize / 2, cursorY, qrSize, qrSize);
+    cursorY += qrSize + 6;
+
+    // Participant name
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
-    doc.text(participant.name, x + 5, y + qrCodeSize + 10);
-    
-    // Add church name
-    doc.setFontSize(8);
+    doc.setFont(undefined, 'bold');
+    doc.text(p.name, centerX, cursorY, { align: 'center' });
+    cursorY += 8;
+
+    // Church
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text(participant.church, x + 5, y + qrCodeSize + 15);
-    
-    // Add participant type (student/leader)
-    doc.setFontSize(8);
-    doc.text(`Type: ${participant.type}`, x + 5, y + qrCodeSize + 20);
-    
-    // Move to next column
-    x += badgeWidth;
+    doc.text(p.church, centerX, cursorY, { align: 'center' });
+    cursorY += 8;
+
+    // Type
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(0, 51, 102); // navy blue
+    doc.text(p.type.charAt(0).toUpperCase() + p.type.slice(1), centerX, cursorY, { align: 'center' });
+
+    col++;
+    if (col === columns) {
+      col = 0;
+      row++;
+    }
   }
-  
+
   return doc.output('blob');
 }
