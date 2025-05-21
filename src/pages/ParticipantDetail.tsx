@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Clock, MapPin, User } from 'lucide-react';
-import { getParticipantActivityLogs, getParticipantByQrCode } from '../utils/firebase';
+import { getParticipantActivityLogs, getParticipantById } from '../utils/firebase';
 import { ActivityLog, Participant } from '../types';
 import { formatDateTime } from '../utils/helpers';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
@@ -10,18 +10,18 @@ import Badge from '../components/ui/Badge';
 import AuthGuard from '../components/AuthGuard';
 
 const ParticipantDetail: React.FC = () => {
-  const { participantId } = useParams<{ participantId: string }>();
+  const { eventId, participantId } = useParams<{ eventId: string; participantId: string }>();
   const [participant, setParticipant] = useState<Participant | null>(null);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!participantId) return;
+      if (!eventId || !participantId) return;
       setLoading(true);
       try {
-        const p = await getParticipantByQrCode(participantId, 'camp2025'); // Adjust event ID if dynamic
-        if (p) setParticipant(p);
+        const p = await getParticipantById(eventId, participantId);
+        setParticipant(p);
 
         const history = await getParticipantActivityLogs(participantId);
         setLogs(history);
@@ -32,7 +32,7 @@ const ParticipantDetail: React.FC = () => {
       }
     };
     fetchData();
-  }, [participantId]);
+  }, [eventId, participantId]);
 
   if (loading) return <LoadingSpinner />;
 
@@ -47,9 +47,9 @@ const ParticipantDetail: React.FC = () => {
   return (
     <AuthGuard>
       <div className="space-y-6">
-        <Link to="/dashboard">
+        <Link to={`/events/${eventId}`}>
           <button className="text-sm text-teal-600 flex items-center mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Event
           </button>
         </Link>
 
