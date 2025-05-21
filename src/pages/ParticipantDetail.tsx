@@ -21,6 +21,10 @@ const ParticipantDetail: React.FC = () => {
       setLoading(true);
       try {
         const p = await getParticipantById(eventId, participantId);
+        if (!p) {
+          setParticipant(null);
+          return;
+        }
         setParticipant(p);
 
         const history = await getParticipantActivityLogs(participantId);
