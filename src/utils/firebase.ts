@@ -158,6 +158,11 @@ export async function getEventById(eventId: string): Promise<Event> {
 
 // Participant related functions
 
+function generateDeterministicQrCode(eventId: string, name: string, church: string): string {
+  const input = `${eventId}-${name.trim().toLowerCase()}-${church.trim().toLowerCase()}`;
+  return input.replace(/\s+/g, '-');
+}
+
 export async function createParticipant(participant: Omit<Participant, 'id' | 'createdAt'>) {
   if (!participant.eventId) throw new Error('Missing eventId for participant');
 
@@ -175,9 +180,11 @@ export async function createParticipant(participant: Omit<Participant, 'id' | 'c
   }
 
   const participantRef = doc(collection(db, 'events', participant.eventId, 'participants'));
+
   const newParticipant: Participant = {
     ...participant,
     id: participantRef.id,
+    qrCode: generateDeterministicQrCode(participant.eventId, participant.name, participant.church),
     createdAt: new Date(),
     currentActivityId: null,
   };
@@ -207,6 +214,13 @@ export async function getParticipantsByEvent(eventId: string) {
 }
 
 export async function getParticipantByQrCode(qrCode: string, eventId: string) {
+  // 🔥 OLD (flat structure)
+  // const participantsQuery = query(
+  //   collection(db, 'participants'),
+  //   where('qrCode', '==', qrCode),
+  //   where('eventId', '==', eventId)
+  // );
+
   const participantsQuery = query(
     collection(db, 'events', eventId, 'participants'),
     where('qrCode', '==', qrCode)
