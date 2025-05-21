@@ -175,7 +175,6 @@ export async function createParticipant(participant: Omit<Participant, 'id' | 'c
 
 export async function getParticipantsByEvent(eventId: string) {
   const participantsQuery = collection(db, 'events', eventId, 'participants');
-  );
   
   const participantsSnapshot = await getDocs(participantsQuery);
   const participants: Participant[] = [];
