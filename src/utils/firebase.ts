@@ -174,9 +174,7 @@ export async function createParticipant(participant: Omit<Participant, 'id' | 'c
 }
 
 export async function getParticipantsByEvent(eventId: string) {
-  const participantsQuery = query(
-    collection(db, 'participants'),
-    where('eventId', '==', eventId)
+  const participantsQuery = collection(db, 'events', eventId, 'participants');
   );
   
   const participantsSnapshot = await getDocs(participantsQuery);
@@ -394,9 +392,8 @@ export async function getParticipantActivityLogs(participantId: string) {
 
 export async function getParticipantsByChurch(church: string, eventId: string) {
   const participantsQuery = query(
-    collection(db, 'participants'),
-    where('church', '==', church),
-    where('eventId', '==', eventId)
+    collection(db, 'events', eventId, 'participants'),
+    where('church', '==', church)
   );
   
   const participantsSnapshot = await getDocs(participantsQuery);
@@ -416,7 +413,7 @@ export async function getParticipantsByChurch(church: string, eventId: string) {
   return participants;
 }
 
-export async function getParticipantsByActivityId(activityId: string) {
+export async function getParticipantsByActivityId(eventId: string, activityId: string) {
   const allLogsQuery = query(
     collection(db, 'activityLogs'),
     where('activityId', '==', activityId)
@@ -455,7 +452,7 @@ export async function getParticipantsByActivityId(activityId: string) {
   const participants: Participant[] = [];
 
   for (const id of activeParticipantIds) {
-    const participantDoc = await getDoc(doc(db, 'participants', id));
+    const participantDoc = await getDoc(doc(db, 'events', eventId, 'participants', id));
     if (participantDoc.exists()) {
       const participantData = participantDoc.data() as Omit<Participant, 'createdAt'> & {
         createdAt: Timestamp;
