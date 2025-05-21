@@ -214,7 +214,7 @@ const QrScannerPage: React.FC = () => {
           selectedActivity={selectedActivity}
           scanType={scanType}
           onScan={handleScan}
-          getParticipantInfo={getParticipantInfo}
+          getParticipantInfo={(qrCode) => getParticipantByQrCode(qrCode, eventId!)}
           getParticipantCurrentActivity={getCurrentActivity}
         />
       </div>
