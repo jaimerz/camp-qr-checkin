@@ -14,6 +14,7 @@ import QrScanner from '../components/QrScanner';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Select from '../components/ui/Select';
 import Button from '../components/ui/Button';
+import { updateParticipantLocation } from '../utils/firebase';
 
 const QrScannerPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
