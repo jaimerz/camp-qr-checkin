@@ -337,23 +337,22 @@ export async function getParticipantCurrentActivity(participantId: string) {
   if (activityLogs.length === 0) {
     return null;
   }
-  
+
   const latestLog = activityLogs[0];
-  
-  // If the latest log is a return, the participant is at camp
+
+  // If the latest log is a return, they are at camp
   if (latestLog.type === 'return') {
     return null;
   }
-  
-  // If the latest log is a departure, get the activity
-  if (latestLog.activityId) {
+
+  // If the latest log is a departure or change, get the activity
+  if ((latestLog.type === 'departure' || latestLog.type === 'change') && latestLog.activityId) {
     const activityDoc = await getDoc(doc(db, 'activities', latestLog.activityId));
-    
     if (activityDoc.exists()) {
       return activityDoc.data() as Activity;
     }
   }
-  
+
   return null;
 }
 
@@ -427,7 +426,7 @@ export async function getParticipantsByChurch(church: string, eventId: string) {
 export async function getParticipantsByActivityId(eventId: string, activityId: string) {
   const allLogsQuery = query(
     collection(db, 'activityLogs'),
-    where('activityId', '==', activityId)
+    where('eventId', '==', eventId)
   );
 
   const allLogsSnapshot = await getDocs(allLogsQuery);
@@ -440,37 +439,33 @@ export async function getParticipantsByActivityId(eventId: string, activityId: s
       ...raw,
       timestamp: (raw.timestamp as Timestamp).toDate(),
     };
+
     if (!logsByParticipant[log.participantId]) {
       logsByParticipant[log.participantId] = [];
     }
+
     logsByParticipant[log.participantId].push(log);
   });
 
-  // Determine which participants are currently at the activity
   const activeParticipantIds = Object.entries(logsByParticipant)
     .filter(([_, logs]) => {
-      const sorted = logs.sort((a, b) =>
-        a.timestamp.getTime() - b.timestamp.getTime()
-      );
+      const sorted = logs.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
       const last = sorted[sorted.length - 1];
-      return last.type === 'departure';
+      return last.type === 'departure' && last.activityId === activityId;
     })
     .map(([participantId]) => participantId);
 
   if (activeParticipantIds.length === 0) return [];
 
-  // Get participant details for active participants
   const participants: Participant[] = [];
 
   for (const id of activeParticipantIds) {
     const participantDoc = await getDoc(doc(db, 'events', eventId, 'participants', id));
     if (participantDoc.exists()) {
-      const participantData = participantDoc.data() as Omit<Participant, 'createdAt'> & {
-        createdAt: Timestamp;
-      };
+      const data = participantDoc.data() as Omit<Participant, 'createdAt'> & { createdAt: Timestamp };
       participants.push({
-        ...participantData,
-        createdAt: participantData.createdAt.toDate(),
+        ...data,
+        createdAt: data.createdAt.toDate(),
       });
     }
   }
