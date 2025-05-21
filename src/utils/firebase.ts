@@ -161,12 +161,25 @@ export async function getEventById(eventId: string): Promise<Event> {
 export async function createParticipant(participant: Omit<Participant, 'id' | 'createdAt'>) {
   if (!participant.eventId) throw new Error('Missing eventId for participant');
 
+  // Check if participant with same name + church already exists
+  const existingQuery = query(
+    collection(db, 'events', participant.eventId, 'participants'),
+    where('name', '==', participant.name),
+    where('church', '==', participant.church)
+  );
+
+  const existingSnapshot = await getDocs(existingQuery);
+
+  if (!existingSnapshot.empty) {
+    throw new Error(`Duplicate: ${participant.name} from ${participant.church}`);
+  }
+
   const participantRef = doc(collection(db, 'events', participant.eventId, 'participants'));
   const newParticipant: Participant = {
     ...participant,
     id: participantRef.id,
     createdAt: new Date(),
-    currentActivityId: null, // Ensure they start at camp
+    currentActivityId: null,
   };
 
   await setDoc(participantRef, newParticipant);
