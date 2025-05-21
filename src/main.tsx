@@ -27,7 +27,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/events/:eventId" element={<EventDetail />} />
           <Route path="/scan/:eventId" element={<QrScanner />} />
           <Route path="/participants/import/:eventId" element={<ParticipantImport />} />
-          <Route path="/participants/:participantId" element={<ParticipantDetail />} />
+          <Route path="/events/:eventId/participants/:participantId" element={<ParticipantDetail />} />
           <Route path="/activities/new/:eventId" element={<NewActivity />} />
         </Route>
       </Routes>
