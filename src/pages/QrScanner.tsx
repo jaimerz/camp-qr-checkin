@@ -50,53 +50,59 @@ const QrScannerPage: React.FC = () => {
     if (!eventId) return;
 
     try {
-      if (scanType === 'departure') {
-        const currentActivity = await getParticipantCurrentActivity(participantId);
+      const currentActivity = await getParticipantCurrentActivity(participantId);
 
+      // Handle DEPARTURE
+      if (scanType === 'departure') {
         if (currentActivity) {
           if (currentActivity.id === activityId) {
             alert('⚠️ Participant is already at this activity.');
             return false;
           }
 
-          // Auto-return from the previous activity before leaving to a new one
+          // ✅ Log a CHANGE
           await createActivityLog({
             participantId,
-            activityId: currentActivity.id,
-            leaderId: 'current-user-id', // Replace with actual leader ID if available
-            type: 'return',
+            activityId,
+            fromActivityId: currentActivity.id,
+            leaderId: 'current-user-id', // 🔁 Replace with actual auth ID
+            type: 'change',
+          });
+        } else {
+          // ✅ Log a DEPARTURE
+          await createActivityLog({
+            participantId,
+            activityId,
+            leaderId: 'current-user-id',
+            type: 'departure',
           });
         }
 
-        // Now log new departure
-        await createActivityLog({
-          participantId,
-          activityId,
-          leaderId: 'current-user-id',
-          type: 'departure',
-        });
+        // ✅ Update participant's current location
+        await updateParticipantLocation(participantId, activityId);
       }
 
+      // Handle RETURN
       if (scanType === 'return') {
-        const currentActivity = await getParticipantCurrentActivity(participantId);
-
         if (!currentActivity) {
           alert('⚠️ Participant is already at camp.');
           return false;
         }
 
-        // Log return from current activity
         await createActivityLog({
           participantId,
           activityId: currentActivity.id,
           leaderId: 'current-user-id',
           type: 'return',
         });
-      }
 
-      return true;
+      // ✅ Clear participant's location
+      await updateParticipantLocation(participantId, null);
+    }
+
+    return true;
     } catch (err) {
-     console.error('Error recording scan:', err);
+      console.error('Error recording scan:', err);
       throw err;
     }
   };
