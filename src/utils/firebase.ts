@@ -320,16 +320,20 @@ export async function getParticipantActivityLogs(participantId: string) {
     };
     
     // Get leader name
-    const leaderDoc = await getDoc(doc.ref.parent.parent!.collection('users').doc(log.leaderId));
-    if (leaderDoc.exists()) {
-      log.leaderName = (leaderDoc.data() as User).displayName;
+    if (log.leaderId) {
+      const leaderRef = doc(db, 'users', log.leaderId);
+      const leaderSnap = await getDoc(leaderRef);
+      if (leaderSnap.exists()) {
+        log.leaderName = (leaderSnap.data() as User).displayName;
+      }
     }
-    
+
     // Get activity name if activityId is not null
     if (log.activityId) {
-      const activityDoc = await getDoc(doc.ref.parent.parent!.collection('activities').doc(log.activityId));
-      if (activityDoc.exists()) {
-        log.activityName = (activityDoc.data() as Activity).name;
+      const activityRef = doc(db, 'activities', log.activityId);
+      const activitySnap = await getDoc(activityRef);
+      if (activitySnap.exists()) {
+        log.activityName = (activitySnap.data() as Activity).name;
       }
     }
     
