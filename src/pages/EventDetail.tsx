@@ -319,7 +319,7 @@ const EventDetail: React.FC = () => {
                   {participants.map((participant) => (
                     <Link 
                       key={participant.id}
-                      to={`/participants/${participant.id}`}
+                      to={`/events/${participant.eventId}/participants/${participant.qrCode}`}
                       className="block"
                     >
                       <div className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50">
