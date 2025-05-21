@@ -409,6 +409,14 @@ export async function getParticipantActivityLogs(participantId: string) {
         log.activityName = (activitySnap.data() as Activity).name;
       }
     }
+    
+    if (log.fromActivityId) {
+      const fromActivityRef = doc(db, 'activities', log.fromActivityId);
+      const fromActivitySnap = await getDoc(fromActivityRef);
+      if (fromActivitySnap.exists()) {
+        log.fromActivityName = (fromActivitySnap.data() as Activity).name;
+      }
+    }
 
     activityLogs.push(log);
   }
