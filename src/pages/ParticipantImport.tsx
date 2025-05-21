@@ -56,8 +56,6 @@ const ParticipantImport: React.FC = () => {
       } finally {
         setImporting(false);
       }
-    };
-  
   };
 
   return (
