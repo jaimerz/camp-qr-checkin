@@ -3,6 +3,7 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, si
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { User, UserRole, Participant, Activity, ActivityLog, Event } from '../types';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
+import { serverTimestamp } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAKaqOCzuU6si-EIKxcySZwbYR2stozSPc",
