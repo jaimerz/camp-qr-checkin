@@ -54,7 +54,7 @@ const EventDetail: React.FC = () => {
       // Fetch participants by activity
       const byActivityData: Record<string, Participant[]> = {};
       for (const activity of activitiesData) {
-        const activityParticipants = await getParticipantsByActivityId(activity.id);
+        const activityParticipants = await getParticipantsByActivityId(eventId!, activity.id);
         byActivityData[activity.id] = activityParticipants;
       }
       setParticipantsByActivity(byActivityData);
@@ -81,7 +81,7 @@ const EventDetail: React.FC = () => {
     
       const byActivityData: Record<string, Participant[]> = {};
       for (const activity of activities) {
-        const activityParticipants = await getParticipantsByActivityId(activity.id);
+        const activityParticipants = await getParticipantsByActivityId(eventId!, activity.id);
         byActivityData[activity.id] = activityParticipants;
       }
       setParticipantsByActivity(byActivityData);
