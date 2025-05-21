@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Clock, MapPin, User } from 'lucide-react';
-import { getParticipantActivityLogs, getParticipantById } from '../utils/firebase';
+import { getParticipantActivityLogs, getParticipantById, getParticipantByQrCode } from '../utils/firebase';
 import { ActivityLog, Participant } from '../types';
 import { formatDateTime } from '../utils/helpers';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
@@ -20,7 +20,7 @@ const ParticipantDetail: React.FC = () => {
       if (!eventId || !participantId) return;
       setLoading(true);
       try {
-        const p = await getParticipantById(eventId, participantId);
+        const p = await getParticipantByQrCode(eventId, participantId);
         if (!p) {
           setParticipant(null);
           return;
