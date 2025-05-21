@@ -159,13 +159,16 @@ export async function getEventById(eventId: string): Promise<Event> {
 // Participant related functions
 
 export async function createParticipant(participant: Omit<Participant, 'id' | 'createdAt'>) {
-  const participantRef = doc(collection(db, 'participants'));
+  if (!participant.eventId) throw new Error('Missing eventId for participant');
+
+  const participantRef = doc(collection(db, 'events', participant.eventId, 'participants'));
   const newParticipant: Participant = {
     ...participant,
     id: participantRef.id,
     createdAt: new Date(),
+    currentActivityId: null, // Ensure they start at camp
   };
-  
+
   await setDoc(participantRef, newParticipant);
   return newParticipant;
 }
