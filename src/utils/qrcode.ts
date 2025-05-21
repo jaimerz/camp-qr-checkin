@@ -22,8 +22,8 @@ export async function generateQRCode(text: string): Promise<string> {
 // Generate QR code for a participant
 export async function generateParticipantQRCode(participant: Participant): Promise<string> {
   try {
-    // Use participant.id as QR code data
-    return await generateQRCode(participant.id);
+    // Use participant.qrCode instead of participant.id
+    return await generateQRCode(participant.qrCode);
   } catch (error) {
     console.error('Error generating participant QR code:', error);
     throw error;
