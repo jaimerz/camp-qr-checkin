@@ -63,6 +63,11 @@ export function getParticipantTypeColor(type: 'student' | 'leader'): string {
   return type === 'student' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800';
 }
 
+// Format date time
+export function formatDateTime(date: Date): string {
+  return date.toLocaleString(); // Or customize format if needed
+}
+
 // Get activity log type badge color
 export function getActivityLogTypeColor(type: 'departure' | 'return'): string {
   return type === 'departure' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800';
