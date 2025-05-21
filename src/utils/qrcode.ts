@@ -38,18 +38,18 @@ export async function generateQRCodePDF(participants: Participant[]): Promise<Bl
     format: 'a4',
   });
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+  const pageWidth = doc.internal.pageSize.getWidth();   // ~210 mm
+  const pageHeight = doc.internal.pageSize.getHeight(); // ~297 mm
 
-  // Layout config
-  const badgeWidth = 65;
-  const badgeHeight = 70;
-  const qrSize = 35;
-  const columns = 3;
-  const rows = 4;
+  // Updated layout config
   const marginX = 10;
   const marginY = 10;
-  const spacingX = (pageWidth - marginX * 2 - badgeWidth * columns) / (columns - 1);
+  const columns = 3;
+  const rows = 4;
+  const badgeWidth = (pageWidth - 2 * marginX - (columns - 1) * 5) / columns; // dynamic width with spacing
+  const badgeHeight = (pageHeight - 2 * marginY - (rows - 1) * 5) / rows;     // dynamic height with spacing
+  const qrSize = 30;
+  const spacingX = 5;
   const spacingY = 5;
 
   let col = 0;
@@ -69,35 +69,35 @@ export async function generateQRCodePDF(participants: Participant[]): Promise<Bl
     const y = marginY + row * (badgeHeight + spacingY);
     const centerX = x + badgeWidth / 2;
 
-    // Badge background
+    // Draw badge background
     doc.setDrawColor(180);
     doc.setFillColor(255, 255, 255);
     doc.roundedRect(x, y, badgeWidth, badgeHeight, 3, 3, 'FD');
 
     let cursorY = y + 8;
 
-    // QR Code (centered)
+    // QR code
     doc.addImage(qrDataUrl, 'PNG', centerX - qrSize / 2, cursorY, qrSize, qrSize);
     cursorY += qrSize + 6;
 
-    // Participant name
+    // Name
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, 'bold');
     doc.text(p.name, centerX, cursorY, { align: 'center' });
-    cursorY += 8;
+    cursorY += 7;
 
     // Church
     doc.setFontSize(9);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(100, 100, 100);
     doc.text(p.church, centerX, cursorY, { align: 'center' });
-    cursorY += 8;
+    cursorY += 7;
 
-    // Type
+    // Type (navy, bold)
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
-    doc.setTextColor(0, 51, 102); // navy blue
+    doc.setTextColor(0, 51, 102);
     doc.text(p.type.charAt(0).toUpperCase() + p.type.slice(1), centerX, cursorY, { align: 'center' });
 
     col++;
@@ -109,3 +109,4 @@ export async function generateQRCodePDF(participants: Participant[]): Promise<Bl
 
   return doc.output('blob');
 }
+
