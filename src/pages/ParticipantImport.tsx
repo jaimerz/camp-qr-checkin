@@ -17,45 +17,47 @@ const ParticipantImport: React.FC = () => {
     failed: number;
   } | null>(null);
 
-  const handleParticipantsImported = async (participants: Omit<Participant, 'id' | 'createdAt'>[]) => {
-    if (!eventId || participants.length === 0) return;
+    const handleParticipantsImported = async (participants: Omit<Participant, 'id' | 'createdAt'>[]) => {
+      if (!eventId || participants.length === 0) return;
     
-    setImporting(true);
-    let successCount = 0;
-    let failedCount = 0;
-    const failedNames: string[] = [];
-
-    for (const participant of participants) {
+      setImporting(true);
+      let successCount = 0;
+      let failedCount = 0;
+      const failedNames: string[] = [];
+    
       try {
-        await createParticipant({
-          ...participant,
-          eventId,
+        for (const participant of participants) {
+          try {
+            await createParticipant({
+              ...participant,
+              eventId,
+            });
+            successCount++;
+          } catch (err) {
+            console.error('Import error:', err);
+            failedCount++;
+            failedNames.push(participant.name);
+          }
+        }
+    
+        setImportStatus({
+          success: successCount,
+          failed: failedCount,
+          failedNames,
         });
-        successCount++;
+    
+        if (failedCount === 0) {
+          setTimeout(() => {
+            navigate(`/events/${eventId}`);
+          }, 2000);
+        }
       } catch (err) {
-        console.error('Import error:', err);
-        failedCount++;
-        failedNames.push(participant.name);
+        console.error('Unexpected import error:', err);
+      } finally {
+        setImporting(false);
       }
-    }
-
-    setImportStatus({
-      success: successCount,
-      failed: failedCount,
-      failedNames,
-    });
-      
-      // If all imports were successful, navigate back to event detail
-      if (failedCount === 0) {
-        setTimeout(() => {
-          navigate(`/events/${eventId}`);
-        }, 2000);
-      }
-    } catch (err) {
-      console.error('Error importing participants:', err);
-    } finally {
-      setImporting(false);
-    }
+    };
+  
   };
 
   return (
