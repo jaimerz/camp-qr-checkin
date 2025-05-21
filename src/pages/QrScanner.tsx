@@ -14,7 +14,7 @@ import QrScanner from '../components/QrScanner';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Select from '../components/ui/Select';
 import Button from '../components/ui/Button';
-import { updateParticipantLocation } from '../utils/firebase';
+import { updateParticipantLocation, getCurrentUser } from '../utils/firebase';
 
 const QrScannerPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -49,10 +49,18 @@ const QrScannerPage: React.FC = () => {
 
   const handleScan = async (participantId: string, activityId: string | null) => {
     if (!eventId) return;
-
+  
     try {
+      const userInfo = await getCurrentUser();
+      const leaderId = userInfo?.user.uid;
+  
+      if (!leaderId) {
+        alert('Error: unable to identify scanner.');
+        return false;
+      }
+  
       const currentActivity = await getParticipantCurrentActivity(participantId);
-
+  
       // Handle DEPARTURE
       if (scanType === 'departure') {
         if (currentActivity) {
@@ -60,13 +68,13 @@ const QrScannerPage: React.FC = () => {
             alert('⚠️ Participant is already at this activity.');
             return false;
           }
-
+  
           // ✅ Log a CHANGE
           await createActivityLog({
             participantId,
             activityId,
             fromActivityId: currentActivity.id,
-            leaderId: 'current-user-id', // 🔁 Replace with actual auth ID
+            leaderId,
             type: 'change',
           });
         } else {
@@ -74,39 +82,40 @@ const QrScannerPage: React.FC = () => {
           await createActivityLog({
             participantId,
             activityId,
-            leaderId: 'current-user-id',
+            leaderId,
             type: 'departure',
           });
         }
-
+  
         // ✅ Update participant's current location
         await updateParticipantLocation(eventId, participantId, activityId);
       }
-
+  
       // Handle RETURN
       if (scanType === 'return') {
         if (!currentActivity) {
           alert('⚠️ Participant is already at camp.');
           return false;
         }
-
+  
         await createActivityLog({
           participantId,
           activityId: currentActivity.id,
-          leaderId: 'current-user-id',
+          leaderId,
           type: 'return',
         });
-
-      // ✅ Clear participant's location
-      await updateParticipantLocation(eventId, participantId, null);
-    }
-
-    return true;
+  
+        // ✅ Clear participant's location
+        await updateParticipantLocation(eventId, participantId, null);
+      }
+  
+      return true;
     } catch (err) {
       console.error('Error recording scan:', err);
       throw err;
     }
   };
+
   
   const getParticipantInfo = async (participantId: string): Promise<Participant | null> => {
     if (!eventId) return null;
