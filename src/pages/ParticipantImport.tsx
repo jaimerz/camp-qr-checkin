@@ -101,14 +101,16 @@ const ParticipantImport: React.FC = () => {
                 Successfully imported: <span className="font-medium text-green-700">{importStatus.success}</span> participants
               </p>
               {importStatus.failed > 0 && (
-                <p>
-                  Failed to import: <span className="font-medium text-red-700">{importStatus.failed}</span> participants
-                </p>
-                <ul className="text-sm text-gray-600 list-disc ml-6">
-                  {importStatus.failedNames?.map((name) => (
-                    <li key={name}>{name}</li>
-                  ))}
-                </ul>
+                <>
+                  <p>
+                    Failed to import: <span className="font-medium text-red-700">{importStatus.failed}</span> participants
+                  </p>
+                  <ul className="text-sm text-gray-600 list-disc ml-6">
+                    {importStatus.failedNames?.map((name) => (
+                      <li key={name}>{name}</li>
+                    ))}
+                  </ul>
+                </>            
               )}
               {importStatus.failed === 0 && (
                 <p className="text-sm text-gray-500 mt-2">Redirecting to event page...</p>
