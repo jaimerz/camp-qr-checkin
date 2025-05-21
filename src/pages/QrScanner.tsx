@@ -79,7 +79,7 @@ const QrScannerPage: React.FC = () => {
         }
 
         // ✅ Update participant's current location
-        await updateParticipantLocation(participantId, activityId);
+        await updateParticipantLocation(eventId, participantId, activityId);
       }
 
       // Handle RETURN
