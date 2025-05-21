@@ -213,6 +213,25 @@ export async function getParticipantsByEvent(eventId: string) {
   return participants;
 }
 
+export async function getParticipantById(eventId: string, participantId: string): Promise<Participant | null> {
+  const ref = doc(db, 'events', eventId, 'participants', participantId);
+  const snapshot = await getDoc(ref);
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  const data = snapshot.data() as Omit<Participant, 'createdAt'> & {
+    createdAt: Timestamp;
+  };
+
+  return {
+    id: snapshot.id,
+    ...data,
+    createdAt: data.createdAt.toDate(),
+  };
+}
+
 export async function getParticipantByQrCode(qrCode: string, eventId: string) {
   // 🔥 OLD (flat structure)
   // const participantsQuery = query(
