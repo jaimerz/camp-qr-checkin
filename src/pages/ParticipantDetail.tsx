@@ -10,24 +10,24 @@ import Badge from '../components/ui/Badge';
 import AuthGuard from '../components/AuthGuard';
 
 const ParticipantDetail: React.FC = () => {
-  const { eventId, participantId } = useParams<{ eventId: string; participantId: string }>();
+  const { eventId, qrCode } = useParams<{ eventId: string; qrCode: string }>();
   const [participant, setParticipant] = useState<Participant | null>(null);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!eventId || !participantId) return;
+      if (!eventId || !qrCode) return;
       setLoading(true);
       try {
-        const p = await getParticipantByQrCode(eventId, participantId);
+        const p = await getParticipantByQrCode(qrCode, eventId);
         if (!p) {
           setParticipant(null);
           return;
         }
         setParticipant(p);
 
-        const history = await getParticipantActivityLogs(participantId);
+        const history = await getParticipantActivityLogs(p.id);
         setLogs(history);
       } catch (error) {
         console.error('Error fetching participant data:', error);
