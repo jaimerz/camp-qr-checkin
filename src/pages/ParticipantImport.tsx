@@ -23,26 +23,27 @@ const ParticipantImport: React.FC = () => {
     setImporting(true);
     let successCount = 0;
     let failedCount = 0;
-    
-    try {
-      // Import participants one by one
-      for (const participant of participants) {
-        try {
-          await createParticipant({
-            ...participant,
-            eventId: eventId!,
-          });
-          successCount++;
-        } catch (err) {
-          console.error('Error importing participant:', err);
-          failedCount++;
-        }
+    const failedNames: string[] = [];
+
+    for (const participant of participants) {
+      try {
+        await createParticipant({
+          ...participant,
+          eventId,
+        });
+        successCount++;
+      } catch (err) {
+        console.error('Import error:', err);
+        failedCount++;
+        failedNames.push(participant.name);
       }
-      
-      setImportStatus({
-        success: successCount,
-        failed: failedCount,
-      });
+    }
+
+    setImportStatus({
+      success: successCount,
+      failed: failedCount,
+      failedNames,
+    });
       
       // If all imports were successful, navigate back to event detail
       if (failedCount === 0) {
@@ -103,6 +104,11 @@ const ParticipantImport: React.FC = () => {
                 <p>
                   Failed to import: <span className="font-medium text-red-700">{importStatus.failed}</span> participants
                 </p>
+                <ul className="text-sm text-gray-600 list-disc ml-6">
+                  {importStatus.failedNames?.map((name) => (
+                    <li key={name}>{name}</li>
+                  ))}
+                </ul>
               )}
               {importStatus.failed === 0 && (
                 <p className="text-sm text-gray-500 mt-2">Redirecting to event page...</p>
