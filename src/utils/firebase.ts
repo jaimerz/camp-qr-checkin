@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { User, UserRole, Participant, Activity, ActivityLog, Event } from '../types';
+import { doc, updateDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAKaqOCzuU6si-EIKxcySZwbYR2stozSPc",
@@ -15,6 +16,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+export const updateParticipantLocation = async (
+  participantId: string,
+  activityId: string | null
+) => {
+  const ref = doc(db, 'participants', participantId);
+  await updateDoc(ref, {
+    currentActivityId: activityId,
+  });
+};
 
 export async function loginUser(email: string, password: string) {
   try {
@@ -243,17 +254,33 @@ export async function getActivitiesByEvent(eventId: string) {
 
 // Activity log related functions
 
-export async function createActivityLog(activityLog: Omit<ActivityLog, 'id' | 'timestamp'>) {
-  const activityLogRef = doc(collection(db, 'activityLogs'));
-  const newActivityLog: ActivityLog = {
-    ...activityLog,
-    id: activityLogRef.id,
-    timestamp: new Date(),
+export const createActivityLog = async ({
+  participantId,
+  activityId,
+  fromActivityId,
+  leaderId,
+  type,
+}: {
+  participantId: string;
+  activityId: string;
+  fromActivityId?: string;
+  leaderId: string;
+  type: 'departure' | 'return' | 'change';
+}) => {
+  const logData: any = {
+    participantId,
+    activityId,
+    leaderId,
+    type,
+    timestamp: serverTimestamp(),
   };
-  
-  await setDoc(activityLogRef, newActivityLog);
-  return newActivityLog;
-}
+
+  if (type === 'change' && fromActivityId) {
+    logData.fromActivityId = fromActivityId;
+  }
+
+  await addDoc(collection(db, 'activityLogs'), logData);
+};
 
 export async function getParticipantCurrentActivity(participantId: string) {
   const activityLogsQuery = query(
