@@ -194,11 +194,9 @@ export async function getParticipantsByEvent(eventId: string) {
 }
 
 export async function getParticipantByQrCode(qrCode: string, eventId: string) {
-  // Try matching by qrCode field first
   const participantsQuery = query(
-    collection(db, 'participants'),
-    where('qrCode', '==', qrCode),
-    where('eventId', '==', eventId)
+    collection(db, 'events', eventId, 'participants'),
+    where('qrCode', '==', qrCode)
   );
 
   const participantsSnapshot = await getDocs(participantsQuery);
@@ -213,19 +211,6 @@ export async function getParticipantByQrCode(qrCode: string, eventId: string) {
       id: participantDoc.id,
       ...participantData,
       createdAt: participantData.createdAt.toDate(),
-    };
-  }
-
-  // ✅ Fallback: try to get participant directly by ID
-  const fallbackDoc = await getDoc(doc(db, 'participants', qrCode));
-  if (fallbackDoc.exists()) {
-    const data = fallbackDoc.data() as Omit<Participant, 'createdAt'> & {
-      createdAt: Timestamp;
-    };
-    return {
-      ...data,
-      id: fallbackDoc.id,
-      createdAt: data.createdAt.toDate(),
     };
   }
 
