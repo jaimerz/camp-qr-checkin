@@ -424,53 +424,43 @@ export async function getParticipantsByChurch(church: string, eventId: string) {
 }
 
 export async function getParticipantsByActivityId(eventId: string, activityId: string) {
-  const allLogsQuery = query(
-    collection(db, 'activityLogs'),
-    where('eventId', '==', eventId)
-  );
+  const participants = await getParticipantsByEvent(eventId);
+  const matchingParticipants: Participant[] = [];
 
-  const allLogsSnapshot = await getDocs(allLogsQuery);
+  for (const participant of participants) {
+    const logsQuery = query(
+      collection(db, 'activityLogs'),
+      where('participantId', '==', participant.id)
+    );
+    const logsSnapshot = await getDocs(logsQuery);
 
-  const logsByParticipant: Record<string, ActivityLog[]> = {};
+    const logs: ActivityLog[] = logsSnapshot.docs.map((doc) => {
+      const raw = doc.data() as Omit<ActivityLog, 'timestamp'> & {
+        timestamp: Timestamp;
+      };
+      return {
+        ...raw,
+        timestamp: raw.timestamp.toDate(),
+      };
+    });
 
-  allLogsSnapshot.forEach((doc) => {
-    const raw = doc.data() as ActivityLog;
-    const log = {
-      ...raw,
-      timestamp: (raw.timestamp as Timestamp).toDate(),
-    };
+    if (logs.length === 0) continue;
 
-    if (!logsByParticipant[log.participantId]) {
-      logsByParticipant[log.participantId] = [];
-    }
+    // Sort by timestamp DESC
+    logs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
-    logsByParticipant[log.participantId].push(log);
-  });
+    const latest = logs[0];
 
-  const activeParticipantIds = Object.entries(logsByParticipant)
-    .filter(([_, logs]) => {
-      const sorted = logs.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-      const last = sorted[sorted.length - 1];
-      return last.type === 'departure' && last.activityId === activityId;
-    })
-    .map(([participantId]) => participantId);
-
-  if (activeParticipantIds.length === 0) return [];
-
-  const participants: Participant[] = [];
-
-  for (const id of activeParticipantIds) {
-    const participantDoc = await getDoc(doc(db, 'events', eventId, 'participants', id));
-    if (participantDoc.exists()) {
-      const data = participantDoc.data() as Omit<Participant, 'createdAt'> & { createdAt: Timestamp };
-      participants.push({
-        ...data,
-        createdAt: data.createdAt.toDate(),
-      });
+    // If latest is departure or change and destination is this activity
+    if (
+      (latest.type === 'departure' || latest.type === 'change') &&
+      latest.activityId === activityId
+    ) {
+      matchingParticipants.push(participant);
     }
   }
 
-  return participants;
+  return matchingParticipants;
 }
 
 export async function getParticipantsAtCamp(eventId: string) {
