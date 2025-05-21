@@ -97,7 +97,7 @@ const QrScannerPage: React.FC = () => {
         });
 
       // ✅ Clear participant's location
-      await updateParticipantLocation(participantId, null);
+      await updateParticipantLocation(eventId, participantId, null);
     }
 
     return true;
