@@ -51,13 +51,15 @@ const QrScanner: React.FC<QrScannerProps> = ({
   const handleScan = async (data: { text: string } | null) => {
     if (!data || !data.text) return;
     if (!scanning) return;
-
+  
+    const qrCode = data.text.trim();
+    console.log('📦 Scanned QR text:', qrCode);
+  
     try {
       setScanning(false);
-      
-      const participantId = data.text;
-      const participant = await getParticipantInfo(participantId);
-      
+  
+      const participant = await getParticipantInfo(qrCode);
+  
       if (!participant) {
         setError('Invalid QR code. Participant not found.');
         setTimeout(() => {
