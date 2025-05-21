@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { User, UserRole, Participant, Activity, ActivityLog, Event } from '../types';
-import { doc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAKaqOCzuU6si-EIKxcySZwbYR2stozSPc",
@@ -22,10 +22,23 @@ export const updateParticipantLocation = async (
   participantId: string,
   activityId: string | null
 ) => {
-  const ref = doc(db, 'events', eventId, 'participants', participantId);
-  await updateDoc(ref, {
-    currentActivityId: activityId,
-  });
+  try {
+    const ref = doc(db, 'events', eventId, 'participants', participantId);
+    await updateDoc(ref, {
+      currentActivityId: activityId,
+    });
+  } catch (error) {
+    await addDoc(collection(db, 'debug_logs'), {
+      message: 'Failed to update participant activity',
+      eventId,
+      participantId,
+      activityId,
+      timestamp: new Date(),
+      error: JSON.stringify((error as any)?.message || error),
+    });
+
+    throw error;
+  }
 };
 
 export async function loginUser(email: string, password: string) {
