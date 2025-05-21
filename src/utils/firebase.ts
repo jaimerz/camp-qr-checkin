@@ -18,10 +18,11 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 export const updateParticipantLocation = async (
+  eventId: string,
   participantId: string,
   activityId: string | null
 ) => {
-  const ref = doc(db, 'participants', participantId);
+  const ref = doc(db, 'events', eventId, 'participants', participantId);
   await updateDoc(ref, {
     currentActivityId: activityId,
   });
