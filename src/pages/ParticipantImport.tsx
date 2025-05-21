@@ -30,7 +30,7 @@ const ParticipantImport: React.FC = () => {
         try {
           await createParticipant({
             ...participant,
-            eventId,
+            eventId: eventId!,
           });
           successCount++;
         } catch (err) {
