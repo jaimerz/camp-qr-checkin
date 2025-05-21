@@ -182,6 +182,7 @@ export async function getParticipantByQrCode(qrCode: string, eventId: string) {
     };
 
     return {
+      id: participantDoc.id,
       ...participantData,
       createdAt: participantData.createdAt.toDate(),
     };
@@ -316,7 +317,7 @@ export async function getParticipantActivityLogs(participantId: string) {
     
     const log: ActivityLog & { leaderName?: string; activityName?: string } = {
       ...activityLogData,
-      timestamp: activityLogData.timestamp.toDate(),
+      timestamp: (activityLogData.timestamp as Timestamp).toDate(),
     };
     
     // Get leader name
@@ -381,7 +382,11 @@ export async function getParticipantsByActivityId(activityId: string) {
   const logsByParticipant: Record<string, ActivityLog[]> = {};
 
   allLogsSnapshot.forEach((doc) => {
-    const log = doc.data() as ActivityLog;
+    const raw = doc.data() as ActivityLog;
+    const log = {
+      ...raw,
+      timestamp: (raw.timestamp as Timestamp).toDate(),
+    };
     if (!logsByParticipant[log.participantId]) {
       logsByParticipant[log.participantId] = [];
     }
@@ -392,7 +397,7 @@ export async function getParticipantsByActivityId(activityId: string) {
   const activeParticipantIds = Object.entries(logsByParticipant)
     .filter(([_, logs]) => {
       const sorted = logs.sort((a, b) =>
-        (a.timestamp as Timestamp).toDate().getTime() - (b.timestamp as Timestamp).toDate().getTime()
+        a.timestamp.getTime() - b.timestamp.getTime()
       );
       const last = sorted[sorted.length - 1];
       return last.type === 'departure';
