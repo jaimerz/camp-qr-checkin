@@ -22,6 +22,8 @@ export const updateParticipantLocation = async (
   participantId: string,
   activityId: string | null
 ) => {
+  console.log('[updateParticipantLocation] Called with:', { eventId, participantId, activityId });
+
   try {
     const ref = doc(db, 'events', eventId, 'participants', participantId);
     await updateDoc(ref, {
