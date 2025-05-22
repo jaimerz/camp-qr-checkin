@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { getEvents } from '../../utils/firebase';
+import { Event } from '../../types';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, ChevronDown, LogOut, Settings, Users, Calendar, BarChart, Menu, X } from 'lucide-react';
 import { logoutUser } from '../../utils/firebase';
@@ -13,6 +15,20 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [events, setEvents] = useState<Event[]>([]);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      const allEvents = await getEvents();
+      setEvents(allEvents);
+    };
+    fetchEvents();
+  }, []);
+
+  const activeEvent = events
+    .filter((e) => e.active)
+    .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())[0];
+  const activeEventId = activeEvent?.id;
 
   const handleLogout = async () => {
     try {
@@ -81,10 +97,12 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
                 </>
               )}
               
-              {user?.role === 'leader' && (
+              {['admin', 'leader'].includes(user?.role || '') && (
                 <Link
-                  to="/scan"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  to={activeEventId ? `/scan/${activeEventId}` : '#'}
+                  className={`border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                    !activeEventId ? 'pointer-events-none opacity-50' : ''
+                  }`}
                 >
                   Scan QR
                 </Link>
@@ -216,11 +234,15 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
               </>
             )}
             
-            {user?.role === 'leader' && (
+            {['admin', 'leader'].includes(user?.role || '') && (
               <Link
-                to="/scan"
-                className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium"
-                onClick={() => setIsMenuOpen(false)}
+                to={activeEventId ? `/scan/${activeEventId}` : '#'}
+                className={`text-gray-600 hover:bg-gray-50 hover:text-gray-900 block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium ${
+                  !activeEventId ? 'pointer-events-none opacity-50' : ''
+                }`}
+                onClick={() => {
+                  if (activeEventId) setIsMenuOpen(false);
+                }}
               >
                 Scan QR
               </Link>
