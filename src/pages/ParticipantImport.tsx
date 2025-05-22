@@ -65,11 +65,11 @@ const ParticipantImport: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => navigate(`/events/${eventId}`)}
+            onClick={() => navigate('/participants')}
             className="mr-4"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
+            Back to Manage Participants
           </Button>
           <h1 className="text-2xl font-bold text-gray-900">Import Participants</h1>
         </div>

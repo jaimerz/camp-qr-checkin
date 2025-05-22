@@ -5,7 +5,7 @@ import AuthGuard from '../components/AuthGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { getEvents, getParticipantsByEvent, resetTestData } from '../utils/firebase';
+import { getEvents, getParticipantsByEvent, resetTestData, createParticipant } from '../utils/firebase';
 import { generateQRCodePDF } from '../utils/qrcode';
 import { Event, Participant } from '../types';
 
@@ -15,6 +15,9 @@ const ManageParticipants: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [generatingQrCodes, setGeneratingQrCodes] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [name, setName] = useState('');
+  const [church, setChurch] = useState('');
+  const [type, setType] = useState<'student' | 'leader'>('student');
 
   useEffect(() => {
     const fetchActiveEventAndParticipants = async () => {
@@ -119,7 +122,73 @@ const ManageParticipants: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Add Participant Form (placeholder) */}
+        <Card>
+            <CardHeader>
+                <CardTitle>Add New Participant</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <form
+                onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!activeEvent || !name || !church || !type) return;
+
+                    try {
+                    const newParticipant = {
+                        eventId: activeEvent.id,
+                        name,
+                        church,
+                        type,
+                        assignedLeaders: [],
+                    };
+                    await createParticipant(newParticipant);
+                    const updatedList = await getParticipantsByEvent(activeEvent.id);
+                    setParticipants(updatedList);
+                    setName('');
+                    setChurch('');
+                    setType('student');
+                    } catch (err) {
+                    console.error('Error adding participant:', err);
+                    alert('Could not add participant');
+                    }
+                }}
+                className="space-y-4"
+                >
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Name</label>
+                    <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                    required
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Church</label>
+                    <input
+                    type="text"
+                    value={church}
+                    onChange={(e) => setChurch(e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                    required
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Type</label>
+                    <select
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                    >
+                    <option value="student">Student</option>
+                    <option value="leader">Leader</option>
+                    </select>
+                </div>
+                <Button type="submit">Add Participant</Button>
+                </form>
+            </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Add New Participant</CardTitle>
