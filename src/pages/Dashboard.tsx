@@ -12,6 +12,10 @@ const Dashboard: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const activeEvent = events
+    .filter((event) => event.active)
+    .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())[0];
+  const activeEventId = activeEvent?.id;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,8 +70,11 @@ const Dashboard: React.FC = () => {
         {/* Quick actions */}
         <h2 className="text-lg font-semibold text-gray-900 mt-8">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {user?.role === 'leader' && (
-            <Link to="/scan" className="block">
+          {['admin', 'leader'].includes(user?.role || '') && (
+            <Link
+              to={activeEventId ? `/scan/${activeEventId}` : '#'}
+              className={`block ${!activeEventId ? 'pointer-events-none opacity-50' : ''}`}
+            >
               <Card className="h-full transition-transform hover:shadow-md hover:-translate-y-1">
                 <CardContent className="flex flex-col items-center justify-center p-6">
                   <QrCode className="h-12 w-12 text-teal-500 mb-4" />

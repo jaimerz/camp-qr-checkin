@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import QrReader from 'react-qr-scanner';
 import { Activity, Participant } from '../types';
 import Modal from './ui/Modal';
@@ -22,6 +22,9 @@ const QrScanner: React.FC<QrScannerProps> = ({
   getParticipantInfo,
   getParticipantCurrentActivity,
 }) => {
+  // ✅ Declare ref inside component
+  const qrReaderRef = useRef<any>(null);
+
   const [scanning, setScanning] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
@@ -30,17 +33,40 @@ const QrScanner: React.FC<QrScannerProps> = ({
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Check for camera permission
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices
-        .getUserMedia({ video: true })
-        .then(() => {
+    let active = true;
+
+    // ✅ Request camera permission
+    navigator.mediaDevices
+      .getUserMedia({ video: true })
+      .then((stream) => {
+        if (active) {
           setCameraPermission(true);
-        })
-        .catch(() => {
+          // Immediately stop the test stream to avoid keeping the camera on
+          stream.getTracks().forEach((track) => track.stop());
+        }
+      })
+      .catch(() => {
+        if (active) {
           setCameraPermission(false);
+        }
+      });
+
+    // ✅ Cleanup stream when unmounting
+    return () => {
+      active = false;
+      const videoEl = qrReaderRef.current?.video;
+      const stream = videoEl?.srcObject as MediaStream;
+
+      if (stream && stream.getTracks) {
+        stream.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch (e) {
+            console.warn('Error stopping camera track:', e);
+          }
         });
-    }
+      }
+    };
   }, []);
 
   const handleError = (err: any) => {
@@ -51,15 +77,14 @@ const QrScanner: React.FC<QrScannerProps> = ({
   const handleScan = async (data: { text: string } | null) => {
     if (!data || !data.text) return;
     if (!scanning) return;
-  
+
     const qrCode = data.text.trim();
     console.log('📦 Scanned QR text:', qrCode);
-  
+
     try {
       setScanning(false);
-  
       const participant = await getParticipantInfo(qrCode);
-  
+
       if (!participant) {
         setError('Invalid QR code. Participant not found.');
         setTimeout(() => {
@@ -68,33 +93,26 @@ const QrScanner: React.FC<QrScannerProps> = ({
         }, 3000);
         return;
       }
-      
+
       setScannedParticipant(participant);
-      
+
       if (scanType === 'departure') {
-        // Check if participant is already at an activity
         const participantActivity = await getParticipantCurrentActivity(participant.id);
         setCurrentActivity(participantActivity);
-        
-        if (participantActivity) {
-          // Participant is already at an activity
-          if (participantActivity.id === selectedActivity?.id) {
-            // Already at the same activity
-            setError(`${participant.name} is already at ${participantActivity.name}.`);
-            setTimeout(() => {
-              setError(null);
-              setScanning(true);
-              setScannedParticipant(null);
-              setCurrentActivity(null);
-            }, 3000);
-            return;
-          }
+
+        if (participantActivity && participantActivity.id === selectedActivity?.id) {
+          setError(`${participant.name} is already at ${participantActivity.name}.`);
+          setTimeout(() => {
+            setError(null);
+            setScanning(true);
+            setScannedParticipant(null);
+            setCurrentActivity(null);
+          }, 3000);
+          return;
         }
-        
-        // Show confirmation modal
+
         setConfirmModalOpen(true);
       } else if (scanType === 'return') {
-        // For return scans, just confirm and proceed
         setConfirmModalOpen(true);
       }
     } catch (err) {
@@ -109,11 +127,11 @@ const QrScanner: React.FC<QrScannerProps> = ({
 
   const handleConfirm = async () => {
     if (!scannedParticipant) return;
-    
+
     try {
       const activityId = scanType === 'departure' ? selectedActivity?.id || null : null;
       await onScan(scannedParticipant.id, activityId);
-      
+
       setConfirmModalOpen(false);
       setScannedParticipant(null);
       setCurrentActivity(null);
@@ -160,7 +178,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
       <Card className="overflow-hidden">
         <CardHeader className="bg-gray-50">
           <CardTitle className="text-center">
-            {scanType === 'departure' 
+            {scanType === 'departure'
               ? `Scan QR to register for ${selectedActivity?.name || 'activity'}`
               : 'Scan QR to return to camp'}
           </CardTitle>
@@ -169,26 +187,19 @@ const QrScanner: React.FC<QrScannerProps> = ({
           <div className="relative aspect-[4/3] bg-black">
             {scanning && (
               <QrReader
+                ref={qrReaderRef}
                 delay={300}
                 onError={handleError}
                 onScan={handleScan}
                 style={{ width: '100%' }}
-                constraints={{ 
-                  video: { 
-                    facingMode: 'environment' 
-                  } 
-                }}
+                constraints={{ video: { facingMode: 'environment' } }}
               />
             )}
-            
-            {/* Scanning overlay */}
             <div className="absolute inset-0 pointer-events-none border-2 border-white/30">
               <div className="absolute inset-0 border-[20px] border-white/20 flex items-center justify-center">
                 <div className="w-64 h-64 border-2 border-white/60 rounded animate-pulse" />
               </div>
             </div>
-            
-            {/* Error message */}
             {error && (
               <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
                 <div className="bg-white p-4 rounded-lg max-w-xs text-center">
@@ -205,40 +216,27 @@ const QrScanner: React.FC<QrScannerProps> = ({
         </CardFooter>
       </Card>
 
-      {/* Confirmation Modal */}
-      <Modal 
-        isOpen={confirmModalOpen} 
-        onClose={handleCancel}
-        title="Confirm Action"
-      >
+      <Modal isOpen={confirmModalOpen} onClose={handleCancel} title="Confirm Action">
         <div className="space-y-4">
           {scannedParticipant && (
             <div>
               {scanType === 'departure' && (
                 <p>
-                  {currentActivity 
-                    ? `${scannedParticipant.name} is currently at ${currentActivity.name}. Change to ${selectedActivity?.name}?` 
+                  {currentActivity
+                    ? `${scannedParticipant.name} is currently at ${currentActivity.name}. Change to ${selectedActivity?.name}?`
                     : `Register ${scannedParticipant.name} for ${selectedActivity?.name}?`}
                 </p>
               )}
-              
+
               {scanType === 'return' && (
-                <p>
-                  {`Confirm ${scannedParticipant.name} is returning to camp?`}
-                </p>
+                <p>{`Confirm ${scannedParticipant.name} is returning to camp?`}</p>
               )}
-              
+
               <div className="mt-6 flex space-x-3">
-                <Button 
-                  variant="outline" 
-                  onClick={handleCancel}
-                >
+                <Button variant="outline" onClick={handleCancel}>
                   Cancel
                 </Button>
-                <Button 
-                  onClick={handleConfirm}
-                  variant="primary"
-                >
+                <Button onClick={handleConfirm} variant="primary">
                   Confirm
                 </Button>
               </div>
