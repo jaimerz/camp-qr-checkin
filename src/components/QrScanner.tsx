@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import QrReader from 'react-qr-scanner';
 import { Activity, Participant } from '../types';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './ui/Card';
+
+const qrReaderRef = useRef<any>(null);
 
 interface QrScannerProps {
   activities: Activity[];
@@ -30,17 +32,42 @@ const QrScanner: React.FC<QrScannerProps> = ({
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Check for camera permission
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices
-        .getUserMedia({ video: true })
-        .then(() => {
+    let active = true;
+
+    // Check for camera access
+    navigator.mediaDevices
+      .getUserMedia({ video: true })
+      .then((stream) => {
+        if (active) {
           setCameraPermission(true);
-        })
-        .catch(() => {
+
+          // Immediately stop the test stream to avoid leaving the camera open
+          stream.getTracks().forEach((track) => track.stop());
+        }
+      })
+      .catch(() => {
+        if (active) {
           setCameraPermission(false);
+        }
+      });
+
+    return () => {
+      active = false;
+
+      // Stop the QR scanner's active camera stream if any
+      const videoEl = qrReaderRef.current?.video;
+      const stream = videoEl?.srcObject as MediaStream;
+
+      if (stream && stream.getTracks) {
+        stream.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch (e) {
+            console.warn('Error stopping camera track:', e);
+          }
         });
-    }
+      }
+    };
   }, []);
 
   const handleError = (err: any) => {
@@ -169,6 +196,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
           <div className="relative aspect-[4/3] bg-black">
             {scanning && (
               <QrReader
+                ref={qrReaderRef}
                 delay={300}
                 onError={handleError}
                 onScan={handleScan}
