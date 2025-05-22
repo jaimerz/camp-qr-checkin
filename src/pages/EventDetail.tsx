@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Calendar, Users, MapPin, BarChart, ArrowLeft, Download, RefreshCw } from 'lucide-react';
+import { Calendar, Users, MapPin, BarChart, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Tabs from '../components/ui/Tabs';
@@ -15,7 +15,6 @@ import {
   getParticipantsAtCamp,
   resetTestData
 } from '../utils/firebase';
-import { generateQRCodePDF } from '../utils/qrcode';
 import { Participant, Activity, Event } from '../types';
 import { formatDate } from '../utils/helpers';
 
@@ -28,7 +27,6 @@ const EventDetail: React.FC = () => {
   const [participantsByActivity, setParticipantsByActivity] = useState<Record<string, Participant[]>>({});
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(false);
-  const [generatingQrCodes, setGeneratingQrCodes] = useState(false);
   const [activeTabId, setActiveTabId] = useState('overview');
 
   const fetchData = async () => {
@@ -87,28 +85,6 @@ const EventDetail: React.FC = () => {
       setParticipantsByActivity(byActivityData);
     } catch (error) {
       console.error('Error refreshing live data:', error);
-    }
-  };
-
-  const handleGenerateQrCodes = async () => {
-    if (!participants.length) return;
-    
-    setGeneratingQrCodes(true);
-    try {
-      const pdfBlob = await generateQRCodePDF(participants);
-      
-      // Create a download link
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${event?.name || 'event'}-qr-codes.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Error generating QR codes:', error);
-    } finally {
-      setGeneratingQrCodes(false);
     }
   };
 
@@ -199,15 +175,6 @@ const EventDetail: React.FC = () => {
           </Card>
           
           <div className="flex space-x-4">
-            <Button 
-              onClick={handleGenerateQrCodes}
-              isLoading={generatingQrCodes}
-              disabled={!participants.length}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Generate QR Codes
-            </Button>
-            
             <Button 
               variant="outline" 
               onClick={handleResetTestData}
