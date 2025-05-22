@@ -189,21 +189,6 @@ const ManageParticipants: React.FC = () => {
             </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Add New Participant</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600 mb-4">
-              This section will allow you to add individual participants manually.
-            </p>
-            <Button disabled>
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Add Participant (Coming Soon)
-            </Button>
-          </CardContent>
-        </Card>
-
         {/* Participant List (placeholder) */}
         <Card>
           <CardHeader>

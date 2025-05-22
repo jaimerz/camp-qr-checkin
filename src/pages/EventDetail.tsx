@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Calendar, Users, MapPin, BarChart, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Calendar, Users, MapPin, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Tabs from '../components/ui/Tabs';
@@ -273,12 +273,7 @@ const EventDetail: React.FC = () => {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>All Participants</CardTitle>
-              <Link to={`/participants/import/${eventId}`}>
-                <Button size="sm">
-                  Import Participants
-                </Button>
-              </Link>
+              <CardTitle>All Participants</CardTitle>              
             </CardHeader>
             <CardContent>
               {participants.length > 0 ? (
@@ -306,11 +301,8 @@ const EventDetail: React.FC = () => {
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Participants Yet</h3>
                   <p className="text-gray-500 mb-6">
-                    Start by importing participants via CSV or adding them manually.
+                    Participants will be visible once an admin imports them.
                   </p>
-                  <Link to={`/participants/import/${eventId}`}>
-                    <Button>Import Participants</Button>
-                  </Link>
                 </div>
               )}
             </CardContent>
