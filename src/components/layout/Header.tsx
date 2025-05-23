@@ -6,7 +6,7 @@ import { User, ChevronDown, LogOut, Settings, Users, Calendar, BarChart, Menu, X
 import { logoutUser } from '../../utils/firebase';
 import { User as UserType } from '../../types';
 import Button from '../ui/Button';
-import { useUser } from '../contexts/UserContext';
+import { useUser } from '../../contexts/UserContext';
 
 const Header: React.FC = () => {
   const { user } = useUser();
