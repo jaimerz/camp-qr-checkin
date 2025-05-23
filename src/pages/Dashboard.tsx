@@ -45,14 +45,7 @@ const Dashboard: React.FC = () => {
     <AuthGuard>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          {user?.role === 'admin' && (
-            <Link to="/events/new">
-              <Button>
-                Create New Event
-              </Button>
-            </Link>
-          )}
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>          
         </div>
 
         {/* User welcome section */}
@@ -120,6 +113,18 @@ const Dashboard: React.FC = () => {
                     <h3 className="font-medium text-gray-900">View Reports</h3>
                     <p className="text-sm text-gray-500 text-center mt-2">
                       Track participation and attendance
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link to="/events" className="block">
+                <Card className="h-full transition-transform hover:shadow-md hover:-translate-y-1">
+                  <CardContent className="flex flex-col items-center justify-center p-6">
+                    <Calendar className="h-12 w-12 text-green-500 mb-4" />
+                    <h3 className="font-medium text-gray-900">Manage Events</h3>
+                    <p className="text-sm text-gray-500 text-center mt-2">
+                      Create, activate or remove events
                     </p>
                   </CardContent>
                 </Card>

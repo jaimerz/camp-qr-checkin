@@ -1,9 +1,21 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, deleteDoc, Timestamp, writeBatch } from 'firebase/firestore';
+import { getFirestore,
+  collection,
+  doc,
+  db, // assuming db initialized
+  setDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  updateDoc,
+  deleteDoc,
+  Timestamp,
+  writeBatch,
+  addDoc,
+  serverTimestamp } from 'firebase/firestore';
 import { User, UserRole, Participant, Activity, ActivityLog, Event } from '../types';
-import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
-import { serverTimestamp } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAKaqOCzuU6si-EIKxcySZwbYR2stozSPc",
@@ -17,6 +29,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Participant related functions
 
 export const deleteParticipantWithLogs = async (eventId: string, participantId: string) => {
   const db = getFirestore();
@@ -119,14 +133,15 @@ export async function getCurrentUser() {
 
 // Event related functions
 
-export async function createEvent(event: Omit<Event, 'id' | 'createdAt'>) {
+export async function createEvent(event: Omit<Event, 'id' | 'createdAt'> & { createdBy: string }) {
   const eventRef = doc(collection(db, 'events'));
+
   const newEvent: Event = {
     ...event,
     id: eventRef.id,
     createdAt: new Date(),
   };
-  
+
   await setDoc(eventRef, newEvent);
   return newEvent;
 }
@@ -176,6 +191,58 @@ export async function getEventById(eventId: string): Promise<Event> {
     createdAt: data.createdAt.toDate(),
   };
 }
+
+export const setActiveEvent = async (eventId: string) => {
+  const db = getFirestore();
+  const eventsRef = collection(db, 'events');
+  const snapshot = await getDocs(eventsRef);
+
+  const updates = snapshot.docs.map((docSnap) => {
+    const isActive = docSnap.id === eventId;
+    return updateDoc(doc(db, 'events', docSnap.id), { active: isActive });
+  });
+
+  await Promise.all(updates);
+};
+
+export const deleteEventWithCascade = async (eventId: string) => {
+  const db = getFirestore();
+
+  // Delete activities with this eventId
+  const activitiesRef = collection(db, 'activities');
+  const activitiesSnapshot = await getDocs(query(activitiesRef, where('eventId', '==', eventId)));
+
+  const activityIds = activitiesSnapshot.docs.map((docSnap) => docSnap.id);
+
+  await Promise.all(
+    activityIds.map((id) => deleteDoc(doc(db, 'activities', id)))
+  );
+
+  // Delete activityLogs linked to those activities
+  const logsRef = collection(db, 'activityLogs');
+  const logsSnapshot = await getDocs(logsRef); // no indexing on nested so we filter in JS
+
+  const logsToDelete = logsSnapshot.docs.filter((log) =>
+    activityIds.includes(log.data().activityId)
+  );
+
+  await Promise.all(
+    logsToDelete.map((log) => deleteDoc(doc(db, 'activityLogs', log.id)))
+  );
+
+  // Delete all participants under this event
+  const participantsRef = collection(db, `events/${eventId}/participants`);
+  const participantsSnapshot = await getDocs(participantsRef);
+
+  await Promise.all(
+    participantsSnapshot.docs.map((docSnap) =>
+      deleteDoc(doc(db, `events/${eventId}/participants`, docSnap.id))
+    )
+  );
+
+  // Delete the event itself
+  await deleteDoc(doc(db, 'events', eventId));
+};
 
 // Participant related functions
 
