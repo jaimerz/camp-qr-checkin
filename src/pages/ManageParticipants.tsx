@@ -118,28 +118,30 @@ const ManageParticipants: React.FC = () => {
     );
   };
 
-  const handleBulkAction = () => {
+  const handleBulkAction = async () => {
     if (bulkAction === 'delete') {
-      openConfirmModal(
-        `Delete ${selectedIds.length} participant(s)? This will also delete their activity logs.`,
-        async () => {
-          if (!activeEvent) return;
-          try {
-            for (const id of selectedIds) {
-              await deleteParticipantWithLogs(activeEvent.id, id);
-            }
-            const updatedList = await getParticipantsByEvent(activeEvent.id);
-            setParticipants(updatedList);
-            setSelectedIds([]);
-            setBulkAction('');
-            showMessage('Selected participants deleted.', 'success');
-          } catch (err) {
-            console.error('Bulk delete error:', err);
-            showMessage('Failed to delete some participants.', 'error');
-          }
-          setModalOpen(false);
-        }
+      const count = selectedIds.length;
+      if (count === 0 || !activeEvent) return;
+
+      const confirmed = window.confirm(
+        `Are you sure you want to delete ${count} participant${count > 1 ? 's' : ''}? This will also delete their activity logs.`
       );
+
+      if (!confirmed) return;
+
+      try {
+        for (const id of selectedIds) {
+          await deleteParticipantWithLogs(activeEvent.id, id);
+        }
+        const updatedList = await getParticipantsByEvent(activeEvent.id);
+        setParticipants(updatedList);
+        setSelectedIds([]);
+        setBulkAction('');
+        showMessage('Selected participants deleted.', 'success');
+      } catch (err) {
+        console.error('Bulk delete error:', err);
+        showMessage('Failed to delete some participants.', 'error');
+      }
     }
   };
 
@@ -221,7 +223,7 @@ const ManageParticipants: React.FC = () => {
 
                 if (exists) {
                   showMessage('Participant already exists for this event.', 'error');
-                  return;
+                  return; // ✅ Early return prevents fallback error from triggering
                 }
 
                 try {
@@ -241,7 +243,7 @@ const ManageParticipants: React.FC = () => {
                   showMessage('Participant added successfully!', 'success');
                 } catch (err) {
                   console.error('Error adding participant:', err);
-                  showMessage('Could not add participant', 'error');
+                  showMessage('Could not add participant.', 'error');
                 }
               }}
               className="space-y-4"
