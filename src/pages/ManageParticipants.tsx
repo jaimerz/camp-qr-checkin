@@ -5,7 +5,13 @@ import AuthGuard from '../components/AuthGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { getEvents, getParticipantsByEvent, resetTestData, createParticipant, deleteParticipantWithLogs } from '../utils/firebase';
+import {
+  getEvents,
+  getParticipantsByEvent,
+  resetTestData,
+  createParticipant,
+  deleteParticipantWithLogs,
+} from '../utils/firebase';
 import { generateQRCodePDF } from '../utils/qrcode';
 import { Event, Participant } from '../types';
 
@@ -20,6 +26,8 @@ const ManageParticipants: React.FC = () => {
   const [type, setType] = useState<'student' | 'leader'>('student');
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState('');
 
   useEffect(() => {
     const fetchActiveEventAndParticipants = async () => {
@@ -42,6 +50,29 @@ const ManageParticipants: React.FC = () => {
 
     fetchActiveEventAndParticipants();
   }, []);
+
+  const handleBulkAction = async () => {
+    if (bulkAction === 'delete') {
+      const confirmDelete = window.confirm(
+        `Delete ${selectedIds.length} participant(s)? This will also delete their activity logs.`
+      );
+      if (!confirmDelete || !activeEvent) return;
+
+      try {
+        for (const id of selectedIds) {
+          await deleteParticipantWithLogs(activeEvent.id, id);
+        }
+        const updatedList = await getParticipantsByEvent(activeEvent.id);
+        setParticipants(updatedList);
+        setSelectedIds([]);
+        setBulkAction('');
+        showMessage('Selected participants deleted.', 'success');
+      } catch (err) {
+        console.error('Bulk delete error:', err);
+        showMessage('Failed to delete some participants.', 'error');
+      }
+    }
+  };
 
   const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
     setMessage(text);
@@ -84,21 +115,20 @@ const ManageParticipants: React.FC = () => {
 
   const handleDelete = async (participant: Participant) => {
     const confirmed = window.confirm(
-        `Are you sure you want to delete ${participant.name}? This will also delete their activity logs.`
+      `Are you sure you want to delete ${participant.name}? This will also delete their activity logs.`
     );
     if (!confirmed) return;
 
     try {
-        await deleteParticipantWithLogs(participant.eventId, participant.id);
-        const updatedList = await getParticipantsByEvent(participant.eventId);
-        setParticipants(updatedList);
-        showMessage('Participant and logs deleted successfully', 'success');
+      await deleteParticipantWithLogs(participant.eventId, participant.id);
+      const updatedList = await getParticipantsByEvent(participant.eventId);
+      setParticipants(updatedList);
+      showMessage('Participant and logs deleted successfully', 'success');
     } catch (error) {
-        console.error('Error deleting participant and logs:', error);
-        showMessage('Error deleting participant', 'error');
+      console.error('Error deleting participant and logs:', error);
+      showMessage('Error deleting participant', 'error');
     }
   };
-
 
   if (loading) return <LoadingSpinner />;
 
@@ -107,19 +137,17 @@ const ManageParticipants: React.FC = () => {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Manage Participants</h1>
         {message && (
-            <div
-                className={`rounded-md p-3 text-sm mt-2 ${
-                messageType === 'success'
-                    ? 'bg-green-50 text-green-800'
-                    : 'bg-red-50 text-red-800'
-                }`}
-            >
-                {message}
-            </div>
+          <div
+            className={`rounded-md p-3 text-sm mt-2 ${
+              messageType === 'success'
+                ? 'bg-green-50 text-green-800'
+                : 'bg-red-50 text-red-800'
+            }`}
+          >
+            {message}
+          </div>
         )}
-        
 
-        {/* Action Buttons */}
         <Card>
           <CardHeader>
             <CardTitle>Actions</CardTitle>
@@ -145,7 +173,6 @@ const ManageParticipants: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Import Participants */}
         <Card>
           <CardHeader>
             <CardTitle>Import Participants</CardTitle>
@@ -160,7 +187,6 @@ const ManageParticipants: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Add New Participant */}
         <Card>
           <CardHeader>
             <CardTitle>Add New Participant</CardTitle>
@@ -237,7 +263,23 @@ const ManageParticipants: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Participant List */}
+        <div className="flex items-center space-x-3 mb-4">
+          <select
+            value={bulkAction}
+            onChange={(e) => setBulkAction(e.target.value)}
+            className="border border-gray-300 rounded-md p-2 text-sm"
+          >
+            <option value="">Bulk Actions</option>
+            <option value="delete">Delete Selected</option>
+          </select>
+          <Button
+            variant="destructive"
+            disabled={selectedIds.length === 0 || !bulkAction}
+            onClick={handleBulkAction}
+          >
+            Apply
+          </Button>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>All Participants</CardTitle>
@@ -250,16 +292,29 @@ const ManageParticipants: React.FC = () => {
                     key={participant.id}
                     className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50"
                   >
-                    <div>
-                      <p className="font-medium">{participant.name}</p>
-                      <p className="text-sm text-gray-500">{participant.church}</p>
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(participant.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedIds([...selectedIds, participant.id]);
+                          } else {
+                            setSelectedIds(selectedIds.filter((id) => id !== participant.id));
+                          }
+                        }}
+                      />
+                      <div>
+                        <p className="font-medium">{participant.name}</p>
+                        <p className="text-sm text-gray-500">{participant.church}</p>
+                      </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <span className="text-sm text-gray-500">{participant.type}</span>
                       <button
                         onClick={() => handleDelete(participant)}
                         className="text-red-500 hover:text-red-700"
-                        >
+                      >
                         <Trash2 className="h-5 w-5" />
                       </button>
                     </div>
