@@ -52,9 +52,11 @@ const ManageEvents: React.FC = () => {
 
   const generateEventId = (name: string) => {
     return name
+      .normalize('NFD') // Decompose accented characters
+      .replace(/\p{Diacritic}/gu, '') // Remove accents (like é → e)
       .toLowerCase()
-      .replace(/\s+/g, '')
-      .replace(/[^a-z0-9]/g, '');
+      .replace(/\s+/g, '') // Remove spaces
+      .replace(/[^a-z0-9]/g, ''); // Remove all non-alphanumeric
   };
 
   const handleCreate = async () => {
