@@ -6,17 +6,17 @@ import { User, ChevronDown, LogOut, Settings, Users, Calendar, BarChart, Menu, X
 import { logoutUser } from '../../utils/firebase';
 import { User as UserType } from '../../types';
 import Button from '../ui/Button';
+import { useUser } from '../contexts/UserContext';
 
-interface HeaderProps {
-  user: UserType | null;
-}
-
-const Header: React.FC<HeaderProps> = ({ user }) => {
+const Header: React.FC = () => {
+  const { user } = useUser();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
-  const isAdmin = user?.role === 'admin';  
+  
+  const { user: contextUser, loading } = useUser();
+  const isAdmin = contextUser?.role === 'admin' || user?.role === 'admin';
 
   useEffect(() => {
     const fetchEvents = async () => {

@@ -7,11 +7,12 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card'
 import Button from '../components/ui/Button';
 import AuthGuard from '../components/AuthGuard';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useUser } from '../components/contexts/UserContext';
 
 const Dashboard: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, loading } = useUser();
   const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+
   const activeEvent = events
     .filter((event) => event.active)
     .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())[0];
