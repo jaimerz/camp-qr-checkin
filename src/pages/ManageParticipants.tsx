@@ -39,6 +39,7 @@ const ManageParticipants: React.FC = () => {
   const [editParticipant, setEditParticipant] = useState<Participant | null>(null);
   const [editType, setEditType] = useState<'student' | 'leader'>('student');
   const [editLeaders, setEditLeaders] = useState<string>('');
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchActiveEventAndParticipants = async () => {
@@ -227,91 +228,7 @@ const ManageParticipants: React.FC = () => {
             <CardTitle>Add New Participant</CardTitle>
           </CardHeader>
           <CardContent>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!activeEvent || !name || !church || !type) return;
-
-                const qrCode = generateDeterministicQrCode(activeEvent.id, name, church);
-
-                const refreshedList = await getParticipantsByEvent(activeEvent.id);
-                const exists = refreshedList.some(p => p.qrCode === qrCode);
-
-                if (exists) {
-                  showMessage('Participant already exists for this event.', 'error');
-                  return;
-                }
-
-                try {
-                  const newParticipant = {
-                    eventId: activeEvent.id,
-                    name,
-                    church,
-                    type,
-                    assignedLeaders: assignedLeaders
-                      .split(',')
-                      .map((s) => s.trim())
-                      .filter((s) => s.length > 0),
-                    qrCode,
-                  };
-                  await createParticipant(newParticipant);
-                  const updatedList = await getParticipantsByEvent(activeEvent.id);
-                  setParticipants(updatedList);
-                  setName('');
-                  setChurch('');
-                  setType('student');
-                  setAssignedLeaders('');
-                  showMessage('Participant added successfully!', 'success');
-                } catch (err) {
-                  console.error('Error adding participant:', err);
-                  showMessage('Could not add participant.', 'error');
-                }
-              }}
-              className="space-y-4"
-            >
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Church</label>
-                <input
-                  type="text"
-                  value={church}
-                  onChange={(e) => setChurch(e.target.value)}
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Type</label>
-                <select
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                >
-                  <option value="student">Student</option>
-                  <option value="leader">Leader</option>
-                </select>
-              </div>
-              <div>
-              <label className="block text-sm font-medium text-gray-700">Assigned Leaders</label>
-              <input
-                type="text"
-                value={assignedLeaders}
-                placeholder="Comma-separated names (optional)"
-                onChange={(e) => setAssignedLeaders(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-              />
-            </div>
-              <Button type="submit">Add Participant</Button>
-            </form>
+            <Button onClick={() => setAddModalOpen(true)}>Add Participant</Button>
           </CardContent>
         </Card>
 
@@ -449,6 +366,84 @@ const ManageParticipants: React.FC = () => {
             </Button>
           </div>
         </div>
+      </Modal>
+      <Modal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)} title="Add Participant">
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!activeEvent || !name || !church || !type) return;
+
+            const qrCode = generateDeterministicQrCode(activeEvent.id, name, church);
+            const refreshedList = await getParticipantsByEvent(activeEvent.id);
+            if (refreshedList.some(p => p.qrCode === qrCode)) {
+              showMessage('Participant already exists for this event.', 'error');
+              return;
+            }
+
+            try {
+              const newParticipant = {
+                eventId: activeEvent.id,
+                name,
+                church,
+                type,
+                assignedLeaders: assignedLeaders
+                  .split(',')
+                  .map((s) => s.trim())
+                  .filter((s) => s.length > 0),
+                qrCode,
+              };
+              await createParticipant(newParticipant);
+              const updatedList = await getParticipantsByEvent(activeEvent.id);
+              setParticipants(updatedList);
+              setName('');
+              setChurch('');
+              setType('student');
+              setAssignedLeaders('');
+              setAddModalOpen(false);
+              showMessage('Participant added successfully!', 'success');
+            } catch (err) {
+              console.error('Error adding participant:', err);
+              showMessage('Could not add participant.', 'error');
+            }
+          }}
+          className="space-y-4"
+        >
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Name"
+            className="w-full border p-2 rounded"
+            required
+          />
+          <input
+            type="text"
+            value={church}
+            onChange={(e) => setChurch(e.target.value)}
+            placeholder="Church"
+            className="w-full border p-2 rounded"
+            required
+          />
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as 'student' | 'leader')}
+            className="w-full border p-2 rounded"
+          >
+            <option value="student">Student</option>
+            <option value="leader">Leader</option>
+          </select>
+          <input
+            type="text"
+            value={assignedLeaders}
+            onChange={(e) => setAssignedLeaders(e.target.value)}
+            placeholder="Comma-separated leaders (optional)"
+            className="w-full border p-2 rounded"
+          />
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setAddModalOpen(false)}>Cancel</Button>
+            <Button type="submit">Save</Button>
+          </div>
+        </form>
       </Modal>
     </AuthGuard>
   );
