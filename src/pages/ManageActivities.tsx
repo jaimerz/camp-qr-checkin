@@ -17,9 +17,11 @@ const ManageActivities: React.FC = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [editActivity, setEditActivity] = useState<Activity | null>(null);
   const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkAction, setBulkAction] = useState('');
@@ -51,21 +53,24 @@ const ManageActivities: React.FC = () => {
   const handleAdd = async () => {
     if (!name || !location || !activeEvent) return;
     try {
-      await createActivity({ eventId: activeEvent.id, name, location });
+      await createActivity({ eventId: activeEvent.id, name, description, location });
       const updated = await getActivitiesByEvent(activeEvent.id);
       setActivities(updated);
       setName('');
+      setDescription('');
       setLocation('');
       showMessage('Activity created!', 'success');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      showMessage('Failed to create activity', 'error');
+      const msg = err.message?.includes('already exists') ? err.message : 'Failed to create activity';
+      showMessage(msg, 'error');
     }
   };
 
   const openEditModal = (activity: Activity) => {
     setEditActivity(activity);
     setEditName(activity.name);
+    setEditDescription(activity.description);
     setEditLocation(activity.location);
   };
 
@@ -102,6 +107,11 @@ const ManageActivities: React.FC = () => {
     }
   };
 
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setBulkAction('');
+  };
+
   return (
     <AuthGuard requiredRole="admin">
       <div className="space-y-6">
@@ -117,7 +127,7 @@ const ManageActivities: React.FC = () => {
           </div>
         )}
 
-        <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Confirm">
+        <Modal isOpen={modalOpen} onClose={handleModalClose} title="Confirm">
           <p>{confirmText}</p>
           <div className="mt-4 flex space-x-3">
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
@@ -136,6 +146,13 @@ const ManageActivities: React.FC = () => {
             />
             <input
               type="text"
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Description (optional)"
+              className="w-full border p-2 rounded"
+            />
+            <input
+              type="text"
               value={editLocation}
               onChange={(e) => setEditLocation(e.target.value)}
               className="w-full border p-2 rounded"
@@ -145,9 +162,10 @@ const ManageActivities: React.FC = () => {
               <Button variant="outline" onClick={() => setEditActivity(null)}>Cancel</Button>
               <Button onClick={async () => {
                 if (!activeEvent || !editActivity) return;
-                await updateActivity(activeEvent.id, editActivity.id, {
+                await updateActivity(editActivity.id, {
                   name: editName,
-                  location: editLocation
+                  location: editLocation,
+                  description: editDescription,
                 });
                 const updated = await getActivitiesByEvent(activeEvent.id);
                 setActivities(updated);
@@ -168,6 +186,13 @@ const ManageActivities: React.FC = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Activity name"
+              className="w-full border p-2 rounded"
+            />
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description"
               className="w-full border p-2 rounded"
             />
             <input

@@ -352,6 +352,17 @@ export async function getParticipantByQrCode(qrCode: string, eventId: string) {
 // Activity related functions
 
 export async function createActivity(activity: Omit<Activity, 'id' | 'createdAt'>) {
+  // Prevent duplicates for same event + name
+  const duplicateQuery = query(
+    collection(db, 'activities'),
+    where('eventId', '==', activity.eventId),
+    where('name', '==', activity.name)
+  );
+  const duplicateSnap = await getDocs(duplicateQuery);
+  if (!duplicateSnap.empty) {
+    throw new Error(`Activity "${activity.name}" already exists for this event.`);
+  }
+
   const activityRef = doc(collection(db, 'activities'));
   const newActivity: Activity = {
     ...activity,
@@ -616,8 +627,21 @@ export async function resetTestData(eventId: string) {
 }
 
 export async function deleteActivity(_eventId: string, activityId: string) {
+  // Delete logs with this activityId
+  const logsQuery = query(
+    collection(db, 'activityLogs'),
+    where('activityId', '==', activityId)
+  );
+  const logsSnapshot = await getDocs(logsQuery);
+
+  const batch = writeBatch(db);
+  logsSnapshot.forEach((doc) => batch.delete(doc.ref));
+
+  // Delete activity
   const ref = doc(db, 'activities', activityId);
-  await deleteDoc(ref);
+  batch.delete(ref);
+
+  await batch.commit();
 }
 
 export async function updateActivity(activityId: string, updates: Partial<Activity>) {
