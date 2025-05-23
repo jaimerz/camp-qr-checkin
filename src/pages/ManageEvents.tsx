@@ -21,7 +21,6 @@ const ManageEvents: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmText, setConfirmText] = useState('');
-  const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
   const [confirmInput, setConfirmInput] = useState('');
   const [targetEventName, setTargetEventName] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -53,7 +52,7 @@ const ManageEvents: React.FC = () => {
   const generateEventId = (name: string) => {
     return name
       .normalize('NFD') // Decompose accented characters
-      .replace(/\p{Diacritic}/gu, '') // Remove accents (like é → e)
+      .replace(/\p{Diacritic}/gu, '') // Remove accents
       .toLowerCase()
       .replace(/\s+/g, '') // Remove spaces
       .replace(/[^a-z0-9]/g, ''); // Remove all non-alphanumeric
@@ -103,27 +102,6 @@ const ManageEvents: React.FC = () => {
     setConfirmText(
       `Type "I want to delete ${event.name}" to confirm deletion. This will erase ALL participants, activities, and logs linked to this event.`
     );
-
-    setConfirmAction(() => async () => {
-      if (confirmInput !== `I want to delete ${event.name}`) {
-        showMessage('Confirmation text does not match.', 'error');
-        return;
-      }
-
-      try {
-        await deleteEventWithCascade(event.id);
-        showMessage('Event deleted.', 'success');
-        fetchEvents();
-      } catch (err) {
-        console.error(err);
-        showMessage('Failed to delete event.', 'error');
-      } finally {
-        setModalOpen(false);
-        setConfirmInput('');
-      }
-    });
-
-    // reset previous input before showing modal
     setConfirmInput('');
     setModalOpen(true);
   };
@@ -162,7 +140,32 @@ const ManageEvents: React.FC = () => {
           />
           <div className="mt-4 flex space-x-3">
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmAction}>Delete Event</Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (confirmInput !== `I want to delete ${targetEventName}`) {
+                  showMessage('Confirmation text does not match.', 'error');
+                  return;
+                }
+
+                try {
+                  const target = events.find(e => e.name === targetEventName);
+                  if (!target) throw new Error('Target event not found');
+
+                  await deleteEventWithCascade(target.id);
+                  showMessage('Event deleted.', 'success');
+                  fetchEvents();
+                } catch (err) {
+                  console.error(err);
+                  showMessage('Failed to delete event.', 'error');
+                } finally {
+                  setModalOpen(false);
+                  setConfirmInput('');
+                }
+              }}
+            >
+              Delete Event
+            </Button>
           </div>
         </Modal>
 
