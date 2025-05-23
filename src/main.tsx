@@ -12,7 +12,6 @@ import EventDetail from './pages/EventDetail';
 import QrScanner from './pages/QrScanner';
 import ParticipantImport from './pages/ParticipantImport';
 import ParticipantDetail from './pages/ParticipantDetail';
-import NewActivity from './pages/NewActivity';
 import ManageParticipants from './pages/ManageParticipants';
 import ManageEvents from './pages/ManageEvents';
 import ManageActivities from './pages/ManageActivities';
