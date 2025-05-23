@@ -18,6 +18,8 @@ const ManageParticipants: React.FC = () => {
   const [name, setName] = useState('');
   const [church, setChurch] = useState('');
   const [type, setType] = useState<'student' | 'leader'>('student');
+  const [message, setMessage] = useState<string | null>(null);
+  const [messageType, setMessageType] = useState<'success' | 'error'>('success');
 
   useEffect(() => {
     const fetchActiveEventAndParticipants = async () => {
@@ -40,6 +42,12 @@ const ManageParticipants: React.FC = () => {
 
     fetchActiveEventAndParticipants();
   }, []);
+
+  const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
+    setMessage(text);
+    setMessageType(type);
+    setTimeout(() => setMessage(null), 3000);
+  };
 
   const handleGenerateQrCodes = async () => {
     if (!participants.length) return;
@@ -230,9 +238,20 @@ const ManageParticipants: React.FC = () => {
                     <div className="flex items-center space-x-4">
                       <span className="text-sm text-gray-500">{participant.type}</span>
                       <button
-                        onClick={() => handleDelete(participant.id)}
+                        onClick={async () => {
+                            const confirmDelete = window.confirm(`Delete ${participant.name}?`);
+                            if (!confirmDelete) return;
+
+                            try {
+                            await handleDelete(participant.id);
+                            showMessage('Participant deleted', 'success');
+                            } catch (err) {
+                            console.error(err);
+                            showMessage('Could not delete participant', 'error');
+                            }
+                        }}
                         className="text-red-500 hover:text-red-700"
-                      >
+                        >
                         <Trash2 className="h-5 w-5" />
                       </button>
                     </div>
