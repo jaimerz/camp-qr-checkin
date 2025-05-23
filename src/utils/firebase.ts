@@ -133,12 +133,11 @@ export async function getCurrentUser() {
 
 // Event related functions
 
-export async function createEvent(event: Omit<Event, 'id' | 'createdAt'> & { createdBy: string }) {
-  const eventRef = doc(collection(db, 'events'));
+export async function createEvent(event: Omit<Event, 'createdAt'>) {
+  const eventRef = doc(db, 'events', event.id); // use provided id
 
   const newEvent: Event = {
     ...event,
-    id: eventRef.id,
     createdAt: new Date(),
   };
 
