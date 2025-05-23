@@ -619,3 +619,8 @@ export async function deleteActivity(_eventId: string, activityId: string) {
   const ref = doc(db, 'activities', activityId);
   await deleteDoc(ref);
 }
+
+export async function updateActivity(activityId: string, updates: Partial<Activity>) {
+  const ref = doc(db, 'activities', activityId);
+  await updateDoc(ref, updates);
+}
