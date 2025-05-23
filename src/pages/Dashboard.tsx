@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card'
 import Button from '../components/ui/Button';
 import AuthGuard from '../components/AuthGuard';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { useUser } from '../components/contexts/UserContext';
+import { useUser } from '../contexts/UserContext';
 
 const Dashboard: React.FC = () => {
   const { user, loading } = useUser();
