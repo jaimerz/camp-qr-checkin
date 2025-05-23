@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Download, RefreshCw, Users, PlusCircle, Trash2 } from 'lucide-react';
+import { Download, RefreshCw, Trash2 } from 'lucide-react';
 import AuthGuard from '../components/AuthGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import Modal from '../components/ui/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
   getEvents,
@@ -28,6 +29,11 @@ const ManageParticipants: React.FC = () => {
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkAction, setBulkAction] = useState('');
+  const [confirmDeleteModal, setConfirmDeleteModal] = useState<{
+    open: boolean;
+    onConfirm: () => void;
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchActiveEventAndParticipants = async () => {
@@ -53,25 +59,27 @@ const ManageParticipants: React.FC = () => {
 
   const handleBulkAction = async () => {
     if (bulkAction === 'delete') {
-      if (!activeEvent) return;
-      if (!selectedIds.length) return;
-
-      const confirmed = confirm(`Are you sure you want to delete ${selectedIds.length} participants? Their activity logs will also be deleted.`);
-      if (!confirmed) return;
-
-      try {
-        for (const id of selectedIds) {
-          await deleteParticipantWithLogs(activeEvent.id, id);
+      setConfirmDeleteModal({
+        open: true,
+        text: `Delete ${selectedIds.length} participant(s)? This will also delete their activity logs.`,
+        onConfirm: async () => {
+          try {
+            for (const id of selectedIds) {
+              await deleteParticipantWithLogs(activeEvent!.id, id);
+            }
+            const updatedList = await getParticipantsByEvent(activeEvent!.id);
+            setParticipants(updatedList);
+            setSelectedIds([]);
+            setBulkAction('');
+            showMessage('Selected participants deleted.', 'success');
+          } catch (err) {
+            console.error('Bulk delete error:', err);
+            showMessage('Failed to delete some participants.', 'error');
+          } finally {
+            setConfirmDeleteModal(null);
+          }
         }
-        const updatedList = await getParticipantsByEvent(activeEvent.id);
-        setParticipants(updatedList);
-        setSelectedIds([]);
-        setBulkAction('');
-        showMessage('Selected participants deleted.', 'success');
-      } catch (err) {
-        console.error('Bulk delete error:', err);
-        showMessage('Failed to delete some participants.', 'error');
-      }
+      });
     }
   };
 
@@ -114,25 +122,30 @@ const ManageParticipants: React.FC = () => {
     }
   };
 
-  const handleDelete = async (participant: Participant) => {
-    const confirmed = confirm(
-      `Are you sure you want to delete ${participant.name}? This will also delete their activity logs.`
-    );
-    if (!confirmed) return;
-
-    try {
-      await deleteParticipantWithLogs(participant.eventId, participant.id);
-      const updatedList = await getParticipantsByEvent(participant.eventId);
-      setParticipants(updatedList);
-      showMessage('Participant and logs deleted successfully', 'success');
-    } catch (error) {
-      console.error('Error deleting participant and logs:', error);
-      showMessage('Error deleting participant', 'error');
-    }
+  const handleDelete = (participant: Participant) => {
+    setConfirmDeleteModal({
+      open: true,
+      text: `Are you sure you want to delete ${participant.name}? This will also delete their activity logs.`,
+      onConfirm: async () => {
+        try {
+          await deleteParticipantWithLogs(participant.eventId, participant.id);
+          const updatedList = await getParticipantsByEvent(participant.eventId);
+          setParticipants(updatedList);
+          showMessage('Participant and logs deleted successfully', 'success');
+        } catch (error) {
+          console.error('Error deleting participant and logs:', error);
+          showMessage('Error deleting participant', 'error');
+        } finally {
+          setConfirmDeleteModal(null);
+        }
+      },
+    });
   };
 
+  const allSelected = participants.length > 0 && selectedIds.length === participants.length;
+
   const toggleSelectAll = () => {
-    if (selectedIds.length === participants.length) {
+    if (allSelected) {
       setSelectedIds([]);
     } else {
       setSelectedIds(participants.map(p => p.id));
@@ -146,9 +159,13 @@ const ManageParticipants: React.FC = () => {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Manage Participants</h1>
         {message && (
-          <div className={`fixed top-4 right-4 z-50 p-3 rounded-md shadow-md text-sm font-medium transition-opacity duration-300 ${
-            messageType === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          }`}>
+          <div
+            className={`rounded-md p-3 text-sm mt-2 ${
+              messageType === 'success'
+                ? 'bg-green-50 text-green-800'
+                : 'bg-red-50 text-red-800'
+            }`}
+          >
             {message}
           </div>
         )}
@@ -269,6 +286,11 @@ const ManageParticipants: React.FC = () => {
         </Card>
 
         <div className="flex items-center space-x-3 mb-4">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={toggleSelectAll}
+          />
           <select
             value={bulkAction}
             onChange={(e) => setBulkAction(e.target.value)}
@@ -293,15 +315,6 @@ const ManageParticipants: React.FC = () => {
           <CardContent>
             {participants.length > 0 ? (
               <div className="space-y-2">
-                <div className="flex items-center space-x-3 mb-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.length === participants.length}
-                    onChange={toggleSelectAll}
-                    className="ml-1"
-                  />
-                  <span className="text-sm text-gray-700">Select All</span>
-                </div>
                 {participants.map((participant) => (
                   <div
                     key={participant.id}
@@ -341,6 +354,24 @@ const ManageParticipants: React.FC = () => {
             )}
           </CardContent>
         </Card>
+
+        {confirmDeleteModal?.open && (
+          <Modal
+            isOpen={true}
+            onClose={() => setConfirmDeleteModal(null)}
+            title="Confirm Deletion"
+          >
+            <p className="mb-4 text-sm text-gray-700">{confirmDeleteModal.text}</p>
+            <div className="flex justify-end space-x-3">
+              <Button variant="outline" onClick={() => setConfirmDeleteModal(null)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={confirmDeleteModal.onConfirm}>
+                Delete
+              </Button>
+            </div>
+          </Modal>
+        )}
       </div>
     </AuthGuard>
   );
