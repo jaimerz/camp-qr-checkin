@@ -248,6 +248,7 @@ const ManageParticipants: React.FC = () => {
                   setName('');
                   setChurch('');
                   setType('student');
+                  setAssignedLeaders([]);
                   showMessage('Participant added successfully!', 'success');
                 } catch (err) {
                   console.error('Error adding participant:', err);
