@@ -11,11 +11,12 @@ export interface User {
 export interface Event {
   id: string;
   name: string;
-  year: number;
+  description: string;
   startDate: Date;
   endDate: Date;
   createdAt: Date;
   createdBy: string;
+  active: boolean;
 }
 
 export type ParticipantType = 'student' | 'leader';
