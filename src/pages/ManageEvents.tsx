@@ -113,9 +113,11 @@ const ManageEvents: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Manage Events</h1>
 
         {message && (
-          <div className={`fixed top-6 right-6 z-50 shadow-lg text-sm px-4 py-2 rounded-md border transition-opacity duration-300 ${
+          <div className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-50 shadow-lg text-sm px-4 py-2 rounded-md border transition-opacity duration-300 ${
             messageType === 'success' ? 'bg-green-50 text-green-800 border-green-300' : 'bg-red-50 text-red-800 border-red-300'
-          }`}>{message}</div>
+          }`}>
+            {message}
+          </div>
         )}
 
         <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Confirm Deletion">
