@@ -16,6 +16,7 @@ import {
 } from '../utils/firebase';
 import { generateQRCodePDF } from '../utils/qrcode';
 import { Event, Participant } from '../types';
+import { doc, updateDoc, getFirestore } from 'firebase/firestore';
 
 const ManageParticipants: React.FC = () => {
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
