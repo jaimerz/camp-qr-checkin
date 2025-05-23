@@ -26,6 +26,7 @@ const ParticipantImport: React.FC = () => {
       const failedNames: string[] = [];
     
       try {
+        
         for (const participant of participants) {
           try {
             await createParticipant({

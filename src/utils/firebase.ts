@@ -179,9 +179,9 @@ export async function getEventById(eventId: string): Promise<Event> {
 
 // Participant related functions
 
-function generateDeterministicQrCode(eventId: string, name: string, church: string): string {
+export function generateDeterministicQrCode(eventId: string, name: string, church: string): string {
   const input = `${eventId}-${name.trim().toLowerCase()}-${church.trim().toLowerCase()}`;
-  return input.replace(/\s+/g, '-');
+  return input.replace(/\s+/g, '-'); // Normalize all whitespace to hyphens
 }
 
 export async function createParticipant(participant: Omit<Participant, 'id' | 'createdAt'>) {
@@ -207,7 +207,6 @@ export async function createParticipant(participant: Omit<Participant, 'id' | 'c
     id: participantRef.id,
     qrCode: generateDeterministicQrCode(participant.eventId, participant.name, participant.church),
     createdAt: new Date(),
-    currentActivityId: null,
   };
 
   await setDoc(participantRef, newParticipant);

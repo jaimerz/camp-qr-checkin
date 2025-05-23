@@ -12,6 +12,7 @@ import {
   resetTestData,
   createParticipant,
   deleteParticipantWithLogs,
+  generateDeterministicQrCode,
 } from '../utils/firebase';
 import { generateQRCodePDF } from '../utils/qrcode';
 import { Event, Participant } from '../types';
@@ -32,6 +33,7 @@ const ManageParticipants: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
   const [confirmText, setConfirmText] = useState('');
+  const [assignedLeaders, setAssignedLeaders] = useState('');
 
   useEffect(() => {
     const fetchActiveEventAndParticipants = async () => {
@@ -218,12 +220,7 @@ const ManageParticipants: React.FC = () => {
                 e.preventDefault();
                 if (!activeEvent || !name || !church || !type) return;
 
-                const normalize = (str: string) =>
-                  str.trim().toLowerCase().replace(/\s+/g, '-');
-
-                const normalizedName = normalize(name);
-                const normalizedChurch = normalize(church);
-                const qrCode = `${activeEvent.id}-${normalizedName}-${normalizedChurch}`;
+                const qrCode = generateDeterministicQrCode(activeEvent.id, name, church);
 
                 const refreshedList = await getParticipantsByEvent(activeEvent.id);
                 const exists = refreshedList.some(p => p.qrCode === qrCode);
@@ -239,7 +236,10 @@ const ManageParticipants: React.FC = () => {
                     name,
                     church,
                     type,
-                    assignedLeaders: [],
+                    assignedLeaders: assignedLeaders
+                      .split(',')
+                      .map((s) => s.trim())
+                      .filter((s) => s.length > 0),
                     qrCode,
                   };
                   await createParticipant(newParticipant);
@@ -287,6 +287,15 @@ const ManageParticipants: React.FC = () => {
                   <option value="leader">Leader</option>
                 </select>
               </div>
+              <div>
+              <label className="block text-sm font-medium text-gray-700">Assigned Leaders</label>
+              <input
+                type="text"
+                placeholder="Comma-separated names (optional)"
+                onChange={(e) => setAssignedLeaders(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+              />
+            </div>
               <Button type="submit">Add Participant</Button>
             </form>
           </CardContent>
