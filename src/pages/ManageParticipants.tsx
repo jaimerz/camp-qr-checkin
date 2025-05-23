@@ -218,7 +218,13 @@ const ManageParticipants: React.FC = () => {
                 e.preventDefault();
                 if (!activeEvent || !name || !church || !type) return;
 
-                const qrCode = `${activeEvent.id}-${name}-${church}`.toLowerCase().trim();
+                const normalize = (str: string) =>
+                  str.trim().toLowerCase().replace(/\s+/g, '-');
+
+                const normalizedName = normalize(name);
+                const normalizedChurch = normalize(church);
+                const qrCode = `${activeEvent.id}-${normalizedName}-${normalizedChurch}`;
+
                 const refreshedList = await getParticipantsByEvent(activeEvent.id);
                 const exists = refreshedList.some(p => p.qrCode === qrCode);
 
@@ -306,26 +312,24 @@ const ManageParticipants: React.FC = () => {
 
         <Card>
           <CardHeader>
+            <div className="flex justify-end px-6 pb-2 -mt-4">
+              <label className="flex items-center space-x-2 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={participants.length > 0 && selectedIds.length === participants.length}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedIds(participants.map((p) => p.id));
+                    } else {
+                      setSelectedIds([]);
+                    }
+                  }}
+                  className="h-4 w-4"
+                />
+              </label>
+            </div>
             <CardTitle>All Participants</CardTitle>
           </CardHeader>
-
-          <div className="flex justify-end px-6 pb-2 -mt-4">
-            <label className="flex items-center space-x-2 text-sm text-gray-600">
-              <input
-                type="checkbox"
-                checked={participants.length > 0 && selectedIds.length === participants.length}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setSelectedIds(participants.map((p) => p.id));
-                  } else {
-                    setSelectedIds([]);
-                  }
-                }}
-                className="h-4 w-4"
-              />
-              <span>Select All</span>
-            </label>
-          </div>
 
           <CardContent>
             {participants.length > 0 ? (
