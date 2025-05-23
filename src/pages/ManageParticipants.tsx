@@ -41,24 +41,35 @@ const ManageParticipants: React.FC = () => {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [assignedLeaders, setAssignedLeaders] = useState<string[]>([]);
   const [editLeaders, setEditLeaders] = useState<string[]>([]);
+  const leaderNames = Array.from(
+    new Set(participants.filter(p => p.type === 'leader').map(p => p.name))
+  );
   
   const TagInput: React.FC<{
     tags: string[];
     setTags: (tags: string[]) => void;
+    suggestions: string[];
     placeholder?: string;
-  }> = ({ tags, setTags, placeholder }) => {
+  }> = ({ tags, setTags, suggestions, placeholder }) => {
     const [input, setInput] = useState('');
+    const [filtered, setFiltered] = useState<string[]>([]);
 
-    const addTag = () => {
-      const trimmed = input.trim();
-      if (trimmed && !tags.includes(trimmed)) {
-        setTags([...tags, trimmed]);
+    useEffect(() => {
+      const f = suggestions
+        .filter(s => s.toLowerCase().includes(input.toLowerCase()) && !tags.includes(s));
+      setFiltered(input ? f : []);
+    }, [input, suggestions, tags]);
+
+    const addTag = (tagToAdd?: string) => {
+      const tag = (tagToAdd ?? input).trim();
+      if (tag && !tags.includes(tag)) {
+        setTags([...tags, tag]);
       }
       setInput('');
     };
 
     return (
-      <div className="border p-2 rounded w-full">
+      <div className="relative border p-2 rounded w-full bg-white">
         <div className="flex flex-wrap gap-2 mb-1">
           {tags.map((tag, idx) => (
             <span key={idx} className="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded flex items-center">
@@ -83,14 +94,25 @@ const ManageParticipants: React.FC = () => {
               addTag();
             }
           }}
-          onBlur={addTag}
           placeholder={placeholder}
           className="w-full outline-none"
         />
+        {filtered.length > 0 && (
+          <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow">
+            {filtered.map((s, i) => (
+              <div
+                key={i}
+                className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
+                onMouseDown={() => addTag(s)}
+              >
+                {s}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
-
 
   useEffect(() => {
     const fetchActiveEventAndParticipants = async () => {
@@ -383,8 +405,9 @@ const ManageParticipants: React.FC = () => {
             <option value="leader">Leader</option>
           </select>
           <TagInput
-            tags={editLeaders}
-            setTags={setEditLeaders}
+            tags={assignedLeaders}
+            setTags={setAssignedLeaders}
+            suggestions={leaderNames}
             placeholder="Type name and press Enter"
           />
           <div className="flex justify-end space-x-2">
@@ -476,8 +499,9 @@ const ManageParticipants: React.FC = () => {
             <option value="leader">Leader</option>
           </select>
           <TagInput
-            tags={assignedLeaders}
-            setTags={setAssignedLeaders}
+            tags={editLeaders}
+            setTags={setEditLeaders}
+            suggestions={leaderNames}
             placeholder="Type name and press Enter"
           />
           <div className="flex justify-end space-x-2">
