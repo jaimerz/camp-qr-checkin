@@ -17,9 +17,8 @@ import {
 import { generateQRCodePDF } from '../utils/qrcode';
 import { Event, Participant } from '../types';
 import { doc, updateDoc, getFirestore } from 'firebase/firestore';
-import React from 'react';
 
-const ManageParticipants: React.FC = () => {
+  const ManageParticipants: React.FC = () => {
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,11 +52,13 @@ const ManageParticipants: React.FC = () => {
   }> = ({ tags, setTags, suggestions, placeholder }) => {
     const [input, setInput] = useState('');
     const [filtered, setFiltered] = useState<string[]>([]);
+    const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
 
     useEffect(() => {
       const f = suggestions
         .filter(s => s.toLowerCase().includes(input.toLowerCase()) && !tags.includes(s));
       setFiltered(input ? f : []);
+      setHighlightedIndex(-1);
     }, [input, suggestions, tags]);
 
     const addTag = (tagToAdd?: string) => {
@@ -66,6 +67,7 @@ const ManageParticipants: React.FC = () => {
         setTags([...tags, tag]);
       }
       setInput('');
+      setHighlightedIndex(-1); // Optional safety
     };
 
     return (
@@ -89,7 +91,24 @@ const ManageParticipants: React.FC = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ',') {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              setHighlightedIndex((prev) =>
+                prev < filtered.length - 1 ? prev + 1 : 0
+              );
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              setHighlightedIndex((prev) =>
+                prev > 0 ? prev - 1 : filtered.length - 1
+              );
+            } else if (e.key === 'Enter') {
+              e.preventDefault();
+              if (highlightedIndex >= 0 && highlightedIndex < filtered.length) {
+                addTag(filtered[highlightedIndex]);
+              } else {
+                addTag(); // use input as fallback
+              }
+            } else if (e.key === ',') {
               e.preventDefault();
               addTag();
             }
@@ -102,8 +121,13 @@ const ManageParticipants: React.FC = () => {
             {filtered.map((s, i) => (
               <div
                 key={i}
-                className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
-                onMouseDown={() => addTag(s)}
+                className={`p-2 cursor-pointer text-sm ${
+                  i === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-100'
+                }`}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  addTag(s);
+                }}
               >
                 {s}
               </div>
@@ -405,8 +429,8 @@ const ManageParticipants: React.FC = () => {
             <option value="leader">Leader</option>
           </select>
           <TagInput
-            tags={assignedLeaders}
-            setTags={setAssignedLeaders}
+            tags={editLeaders}
+            setTags={setEditLeaders}
             suggestions={leaderNames}
             placeholder="Type name and press Enter"
           />
@@ -499,8 +523,8 @@ const ManageParticipants: React.FC = () => {
             <option value="leader">Leader</option>
           </select>
           <TagInput
-            tags={editLeaders}
-            setTags={setEditLeaders}
+            tags={assignedLeaders}
+            setTags={setAssignedLeaders}
             suggestions={leaderNames}
             placeholder="Type name and press Enter"
           />
