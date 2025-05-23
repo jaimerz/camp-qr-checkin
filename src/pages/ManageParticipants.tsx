@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+""import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Download, RefreshCw, Users, PlusCircle, Trash2 } from 'lucide-react';
 import AuthGuard from '../components/AuthGuard';
@@ -53,10 +53,11 @@ const ManageParticipants: React.FC = () => {
 
   const handleBulkAction = async () => {
     if (bulkAction === 'delete') {
-      const confirmDelete = window.confirm(
-        `Delete ${selectedIds.length} participant(s)? This will also delete their activity logs.`
-      );
-      if (!confirmDelete || !activeEvent) return;
+      if (!activeEvent) return;
+      if (!selectedIds.length) return;
+
+      const confirmed = confirm(`Are you sure you want to delete ${selectedIds.length} participants? Their activity logs will also be deleted.`);
+      if (!confirmed) return;
 
       try {
         for (const id of selectedIds) {
@@ -114,7 +115,7 @@ const ManageParticipants: React.FC = () => {
   };
 
   const handleDelete = async (participant: Participant) => {
-    const confirmed = window.confirm(
+    const confirmed = confirm(
       `Are you sure you want to delete ${participant.name}? This will also delete their activity logs.`
     );
     if (!confirmed) return;
@@ -130,6 +131,14 @@ const ManageParticipants: React.FC = () => {
     }
   };
 
+  const toggleSelectAll = () => {
+    if (selectedIds.length === participants.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(participants.map(p => p.id));
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -137,13 +146,9 @@ const ManageParticipants: React.FC = () => {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Manage Participants</h1>
         {message && (
-          <div
-            className={`rounded-md p-3 text-sm mt-2 ${
-              messageType === 'success'
-                ? 'bg-green-50 text-green-800'
-                : 'bg-red-50 text-red-800'
-            }`}
-          >
+          <div className={`fixed top-4 right-4 z-50 p-3 rounded-md shadow-md text-sm font-medium transition-opacity duration-300 ${
+            messageType === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
             {message}
           </div>
         )}
@@ -280,6 +285,7 @@ const ManageParticipants: React.FC = () => {
             Apply
           </Button>
         </div>
+
         <Card>
           <CardHeader>
             <CardTitle>All Participants</CardTitle>
@@ -287,6 +293,15 @@ const ManageParticipants: React.FC = () => {
           <CardContent>
             {participants.length > 0 ? (
               <div className="space-y-2">
+                <div className="flex items-center space-x-3 mb-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.length === participants.length}
+                    onChange={toggleSelectAll}
+                    className="ml-1"
+                  />
+                  <span className="text-sm text-gray-700">Select All</span>
+                </div>
                 {participants.map((participant) => (
                   <div
                     key={participant.id}
