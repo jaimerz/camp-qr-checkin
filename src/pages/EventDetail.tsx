@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Calendar, Users, MapPin, BarChart, ArrowLeft, Download, RefreshCw } from 'lucide-react';
+import { Calendar, Users, MapPin, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Tabs from '../components/ui/Tabs';
@@ -15,7 +15,6 @@ import {
   getParticipantsAtCamp,
   resetTestData
 } from '../utils/firebase';
-import { generateQRCodePDF } from '../utils/qrcode';
 import { Participant, Activity, Event } from '../types';
 import { formatDate } from '../utils/helpers';
 
@@ -28,7 +27,6 @@ const EventDetail: React.FC = () => {
   const [participantsByActivity, setParticipantsByActivity] = useState<Record<string, Participant[]>>({});
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(false);
-  const [generatingQrCodes, setGeneratingQrCodes] = useState(false);
   const [activeTabId, setActiveTabId] = useState('overview');
 
   const fetchData = async () => {
@@ -87,28 +85,6 @@ const EventDetail: React.FC = () => {
       setParticipantsByActivity(byActivityData);
     } catch (error) {
       console.error('Error refreshing live data:', error);
-    }
-  };
-
-  const handleGenerateQrCodes = async () => {
-    if (!participants.length) return;
-    
-    setGeneratingQrCodes(true);
-    try {
-      const pdfBlob = await generateQRCodePDF(participants);
-      
-      // Create a download link
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${event?.name || 'event'}-qr-codes.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Error generating QR codes:', error);
-    } finally {
-      setGeneratingQrCodes(false);
     }
   };
 
@@ -199,15 +175,6 @@ const EventDetail: React.FC = () => {
           </Card>
           
           <div className="flex space-x-4">
-            <Button 
-              onClick={handleGenerateQrCodes}
-              isLoading={generatingQrCodes}
-              disabled={!participants.length}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Generate QR Codes
-            </Button>
-            
             <Button 
               variant="outline" 
               onClick={handleResetTestData}
@@ -306,12 +273,7 @@ const EventDetail: React.FC = () => {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>All Participants</CardTitle>
-              <Link to={`/participants/import/${eventId}`}>
-                <Button size="sm">
-                  Import Participants
-                </Button>
-              </Link>
+              <CardTitle>All Participants</CardTitle>              
             </CardHeader>
             <CardContent>
               {participants.length > 0 ? (
@@ -339,11 +301,8 @@ const EventDetail: React.FC = () => {
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Participants Yet</h3>
                   <p className="text-gray-500 mb-6">
-                    Start by importing participants via CSV or adding them manually.
+                    Participants will be visible once an admin imports them.
                   </p>
-                  <Link to={`/participants/import/${eventId}`}>
-                    <Button>Import Participants</Button>
-                  </Link>
                 </div>
               )}
             </CardContent>

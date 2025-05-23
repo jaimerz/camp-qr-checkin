@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, deleteDoc, Timestamp, writeBatch } from 'firebase/firestore';
 import { User, UserRole, Participant, Activity, ActivityLog, Event } from '../types';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { serverTimestamp } from 'firebase/firestore';
@@ -17,6 +17,27 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+export const deleteParticipantWithLogs = async (eventId: string, participantId: string) => {
+  const db = getFirestore();
+  
+  // Delete logs
+  const logsQuery = query(
+    collection(db, 'activityLogs'),
+    where('participantId', '==', participantId)
+  );
+  const logsSnapshot = await getDocs(logsQuery);
+
+  const batch = writeBatch(db);
+  logsSnapshot.forEach((doc) => batch.delete(doc.ref));
+
+  // Delete participant
+  const participantRef = doc(db, `events/${eventId}/participants/${participantId}`);
+  batch.delete(participantRef);
+
+  await batch.commit();
+};
+
 
 export const updateParticipantLocation = async (
   eventId: string,
@@ -158,9 +179,9 @@ export async function getEventById(eventId: string): Promise<Event> {
 
 // Participant related functions
 
-function generateDeterministicQrCode(eventId: string, name: string, church: string): string {
+export function generateDeterministicQrCode(eventId: string, name: string, church: string): string {
   const input = `${eventId}-${name.trim().toLowerCase()}-${church.trim().toLowerCase()}`;
-  return input.replace(/\s+/g, '-');
+  return input.replace(/\s+/g, '-'); // Normalize all whitespace to hyphens
 }
 
 export async function createParticipant(participant: Omit<Participant, 'id' | 'createdAt'>) {
@@ -186,7 +207,6 @@ export async function createParticipant(participant: Omit<Participant, 'id' | 'c
     id: participantRef.id,
     qrCode: generateDeterministicQrCode(participant.eventId, participant.name, participant.church),
     createdAt: new Date(),
-    currentActivityId: null,
   };
 
   await setDoc(participantRef, newParticipant);
