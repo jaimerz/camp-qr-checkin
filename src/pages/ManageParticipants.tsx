@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Download, RefreshCw, Users, PlusCircle } from 'lucide-react';
+import { Download, RefreshCw, Users, PlusCircle, Trash2 } from 'lucide-react';
 import AuthGuard from '../components/AuthGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { getEvents, getParticipantsByEvent, resetTestData, createParticipant } from '../utils/firebase';
+import { getEvents, getParticipantsByEvent, resetTestData, createParticipant, deleteParticipant } from '../utils/firebase';
 import { generateQRCodePDF } from '../utils/qrcode';
 import { Event, Participant } from '../types';
 
@@ -74,6 +74,17 @@ const ManageParticipants: React.FC = () => {
     }
   };
 
+  const handleDelete = async (participantId: string) => {
+    if (!activeEvent) return;
+    try {
+      await deleteParticipant(participantId);
+      const updatedList = await getParticipantsByEvent(activeEvent.id);
+      setParticipants(updatedList);
+    } catch (error) {
+      console.error('Error deleting participant:', error);
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -122,92 +133,115 @@ const ManageParticipants: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* Add New Participant */}
         <Card>
-            <CardHeader>
-                <CardTitle>Add New Participant</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <form
-                onSubmit={async (e) => {
-                    e.preventDefault();
-                    if (!activeEvent || !name || !church || !type) return;
+          <CardHeader>
+            <CardTitle>Add New Participant</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!activeEvent || !name || !church || !type) return;
 
-                    const qrCode = `${activeEvent.id}::${church}::${name}`.toLowerCase().trim();
-                    const exists = participants.some(p => p.qrCode === qrCode);
+                const qrCode = `${activeEvent.id}::${church}::${name}`.toLowerCase().trim();
+                const exists = participants.some(p => p.qrCode === qrCode);
 
-                    if (exists) {
-                        alert('Participant already exists for this event.');
-                        return;
-                    }
+                if (exists) {
+                  alert('Participant already exists for this event.');
+                  return;
+                }
 
-                    try {
-                        const newParticipant = {
-                        eventId: activeEvent.id,
-                        name,
-                        church,
-                        type,
-                        assignedLeaders: [],
-                        };
-                        await createParticipant(newParticipant);
-                        const updatedList = await getParticipantsByEvent(activeEvent.id);
-                        setParticipants(updatedList);
-                        setName('');
-                        setChurch('');
-                        setType('student');
-                        alert('Participant added successfully!');
-                    } catch (err) {
-                        console.error('Error adding participant:', err);
-                        alert('Could not add participant');
-                    }
-                }}
-
-                className="space-y-4"
+                try {
+                  const newParticipant = {
+                    eventId: activeEvent.id,
+                    name,
+                    church,
+                    type,
+                    assignedLeaders: [],
+                  };
+                  await createParticipant(newParticipant);
+                  const updatedList = await getParticipantsByEvent(activeEvent.id);
+                  setParticipants(updatedList);
+                  setName('');
+                  setChurch('');
+                  setType('student');
+                  alert('Participant added successfully!');
+                } catch (err) {
+                  console.error('Error adding participant:', err);
+                  alert('Could not add participant');
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Church</label>
+                <input
+                  type="text"
+                  value={church}
+                  onChange={(e) => setChurch(e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Type</label>
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded-md p-2"
                 >
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Name</label>
-                    <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                    required
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Church</label>
-                    <input
-                    type="text"
-                    value={church}
-                    onChange={(e) => setChurch(e.target.value)}
-                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                    required
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Type</label>
-                    <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
-                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                    >
-                    <option value="student">Student</option>
-                    <option value="leader">Leader</option>
-                    </select>
-                </div>
-                <Button type="submit">Add Participant</Button>
-                </form>
-            </CardContent>
+                  <option value="student">Student</option>
+                  <option value="leader">Leader</option>
+                </select>
+              </div>
+              <Button type="submit">Add Participant</Button>
+            </form>
+          </CardContent>
         </Card>
 
-        {/* Participant List (placeholder) */}
+        {/* Participant List */}
         <Card>
           <CardHeader>
             <CardTitle>All Participants</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600">
-              A full table with edit/delete options will go here.
-            </p>
+            {participants.length > 0 ? (
+              <div className="space-y-2">
+                {participants.map((participant) => (
+                  <div
+                    key={participant.id}
+                    className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50"
+                  >
+                    <div>
+                      <p className="font-medium">{participant.name}</p>
+                      <p className="text-sm text-gray-500">{participant.church}</p>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <span className="text-sm text-gray-500">{participant.type}</span>
+                      <button
+                        onClick={() => handleDelete(participant.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">No participants found.</p>
+            )}
           </CardContent>
         </Card>
       </div>
