@@ -99,6 +99,18 @@ const ManageParticipants: React.FC = () => {
     <AuthGuard requiredRole="admin">
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Manage Participants</h1>
+        {message && (
+            <div
+                className={`rounded-md p-3 text-sm mt-2 ${
+                messageType === 'success'
+                    ? 'bg-green-50 text-green-800'
+                    : 'bg-red-50 text-red-800'
+                }`}
+            >
+                {message}
+            </div>
+        )}
+        
 
         {/* Action Buttons */}
         <Card>
@@ -156,7 +168,7 @@ const ManageParticipants: React.FC = () => {
                 const exists = participants.some(p => p.qrCode === qrCode);
 
                 if (exists) {
-                  alert('Participant already exists for this event.');
+                  showMessage('Participant already exists for this event.', 'error');
                   return;
                 }
 
@@ -174,10 +186,10 @@ const ManageParticipants: React.FC = () => {
                   setName('');
                   setChurch('');
                   setType('student');
-                  alert('Participant added successfully!');
+                  showMessage('Participant added successfully!', 'success');
                 } catch (err) {
                   console.error('Error adding participant:', err);
-                  alert('Could not add participant');
+                  showMessage('Could not add participant because it already exists', 'error');
                 }
               }}
               className="space-y-4"
