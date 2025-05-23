@@ -50,14 +50,29 @@ const ManageEvents: React.FC = () => {
     fetchData();
   }, []);
 
+  const generateEventId = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[^a-z0-9]/g, '');
+  };
+
   const handleCreate = async () => {
     if (!name || !startDate || !endDate || !user) {
       showMessage('Please complete all required fields.', 'error');
       return;
     }
 
+    const eventId = generateEventId(name);
+    const duplicate = events.find(e => e.id === eventId);
+    if (duplicate) {
+      showMessage('An event with that name already exists.', 'error');
+      return;
+    }
+
     const hasEvents = events.length > 0;
     const newEvent = {
+      id: eventId,
       name,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
