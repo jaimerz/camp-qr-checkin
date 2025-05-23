@@ -151,6 +151,15 @@ const ManageParticipants: React.FC = () => {
     <AuthGuard requiredRole="admin">
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Manage Participants</h1>
+        {message && (
+          <div className={`fixed top-6 right-6 z-50 shadow-lg text-sm px-4 py-2 rounded-md border transition-opacity duration-300 ${
+            messageType === 'success'
+              ? 'bg-green-50 text-green-800 border-green-300'
+              : 'bg-red-50 text-red-800 border-red-300'
+          }`}>
+            {message}
+          </div>
+        )}
 
         <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Please Confirm">
           <p>{confirmText}</p>
@@ -204,15 +213,6 @@ const ManageParticipants: React.FC = () => {
             <CardTitle>Add New Participant</CardTitle>
           </CardHeader>
           <CardContent>
-            {message && (
-              <div className={`mb-4 text-sm px-4 py-2 rounded border ${
-                messageType === 'success'
-                  ? 'bg-green-50 text-green-700 border-green-300'
-                  : 'bg-red-50 text-red-700 border-red-300'
-              }`}>
-                {message}
-              </div>
-            )}
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
