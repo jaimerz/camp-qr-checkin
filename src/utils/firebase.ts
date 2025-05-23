@@ -18,6 +18,12 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+export const deleteParticipant = async (participantId: string): Promise<void> => {
+  const db = getFirestore();
+  const participantRef = doc(db, 'participants', participantId);
+  await deleteDoc(participantRef);
+};
+
 export const updateParticipantLocation = async (
   eventId: string,
   participantId: string,
