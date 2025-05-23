@@ -311,23 +311,19 @@ const ManageParticipants: React.FC = () => {
         </div>
 
         <Card>
-          <CardHeader>
-            <div className="flex justify-end px-6 pb-2 -mt-4">
-              <label className="flex items-center space-x-2 text-sm text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={participants.length > 0 && selectedIds.length === participants.length}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedIds(participants.map((p) => p.id));
-                    } else {
-                      setSelectedIds([]);
-                    }
-                  }}
-                  className="h-4 w-4"
-                />
-              </label>
-            </div>
+          <CardHeader className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              checked={participants.length > 0 && selectedIds.length === participants.length}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelectedIds(participants.map((p) => p.id));
+                } else {
+                  setSelectedIds([]);
+                }
+              }}
+              className="h-4 w-4"
+            />
             <CardTitle>All Participants</CardTitle>
           </CardHeader>
 
