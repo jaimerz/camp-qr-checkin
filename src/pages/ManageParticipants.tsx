@@ -4,8 +4,8 @@ import { Download, RefreshCw, Trash2 } from 'lucide-react';
 import AuthGuard from '../components/AuthGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import Modal from '../components/ui/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
+import Modal from '../components/ui/Modal';
 import {
   getEvents,
   getParticipantsByEvent,
@@ -29,11 +29,9 @@ const ManageParticipants: React.FC = () => {
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkAction, setBulkAction] = useState('');
-  const [confirmDeleteModal, setConfirmDeleteModal] = useState<{
-    open: boolean;
-    onConfirm: () => void;
-    text: string;
-  } | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
+  const [confirmText, setConfirmText] = useState('');
 
   useEffect(() => {
     const fetchActiveEventAndParticipants = async () => {
@@ -57,36 +55,16 @@ const ManageParticipants: React.FC = () => {
     fetchActiveEventAndParticipants();
   }, []);
 
-  const handleBulkAction = async () => {
-    if (bulkAction === 'delete') {
-      setConfirmDeleteModal({
-        open: true,
-        text: `Delete ${selectedIds.length} participant(s)? This will also delete their activity logs.`,
-        onConfirm: async () => {
-          try {
-            for (const id of selectedIds) {
-              await deleteParticipantWithLogs(activeEvent!.id, id);
-            }
-            const updatedList = await getParticipantsByEvent(activeEvent!.id);
-            setParticipants(updatedList);
-            setSelectedIds([]);
-            setBulkAction('');
-            showMessage('Selected participants deleted.', 'success');
-          } catch (err) {
-            console.error('Bulk delete error:', err);
-            showMessage('Failed to delete some participants.', 'error');
-          } finally {
-            setConfirmDeleteModal(null);
-          }
-        }
-      });
-    }
-  };
-
   const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
     setMessage(text);
     setMessageType(type);
     setTimeout(() => setMessage(null), 3000);
+  };
+
+  const openConfirmModal = (text: string, onConfirm: () => void) => {
+    setConfirmText(text);
+    setConfirmAction(() => onConfirm);
+    setModalOpen(true);
   };
 
   const handleGenerateQrCodes = async () => {
@@ -123,10 +101,9 @@ const ManageParticipants: React.FC = () => {
   };
 
   const handleDelete = (participant: Participant) => {
-    setConfirmDeleteModal({
-      open: true,
-      text: `Are you sure you want to delete ${participant.name}? This will also delete their activity logs.`,
-      onConfirm: async () => {
+    openConfirmModal(
+      `Are you sure you want to delete ${participant.name}? This will also delete their activity logs.`,
+      async () => {
         try {
           await deleteParticipantWithLogs(participant.eventId, participant.id);
           const updatedList = await getParticipantsByEvent(participant.eventId);
@@ -135,20 +112,34 @@ const ManageParticipants: React.FC = () => {
         } catch (error) {
           console.error('Error deleting participant and logs:', error);
           showMessage('Error deleting participant', 'error');
-        } finally {
-          setConfirmDeleteModal(null);
         }
-      },
-    });
+        setModalOpen(false);
+      }
+    );
   };
 
-  const allSelected = participants.length > 0 && selectedIds.length === participants.length;
-
-  const toggleSelectAll = () => {
-    if (allSelected) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(participants.map(p => p.id));
+  const handleBulkAction = () => {
+    if (bulkAction === 'delete') {
+      openConfirmModal(
+        `Delete ${selectedIds.length} participant(s)? This will also delete their activity logs.`,
+        async () => {
+          if (!activeEvent) return;
+          try {
+            for (const id of selectedIds) {
+              await deleteParticipantWithLogs(activeEvent.id, id);
+            }
+            const updatedList = await getParticipantsByEvent(activeEvent.id);
+            setParticipants(updatedList);
+            setSelectedIds([]);
+            setBulkAction('');
+            showMessage('Selected participants deleted.', 'success');
+          } catch (err) {
+            console.error('Bulk delete error:', err);
+            showMessage('Failed to delete some participants.', 'error');
+          }
+          setModalOpen(false);
+        }
+      );
     }
   };
 
@@ -158,17 +149,14 @@ const ManageParticipants: React.FC = () => {
     <AuthGuard requiredRole="admin">
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Manage Participants</h1>
-        {message && (
-          <div
-            className={`rounded-md p-3 text-sm mt-2 ${
-              messageType === 'success'
-                ? 'bg-green-50 text-green-800'
-                : 'bg-red-50 text-red-800'
-            }`}
-          >
-            {message}
+
+        <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Please Confirm">
+          <p>{confirmText}</p>
+          <div className="mt-4 flex space-x-3">
+            <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmAction}>Confirm</Button>
           </div>
-        )}
+        </Modal>
 
         <Card>
           <CardHeader>
@@ -214,6 +202,15 @@ const ManageParticipants: React.FC = () => {
             <CardTitle>Add New Participant</CardTitle>
           </CardHeader>
           <CardContent>
+            {message && (
+              <div className={`mb-4 text-sm px-4 py-2 rounded border ${
+                messageType === 'success'
+                  ? 'bg-green-50 text-green-700 border-green-300'
+                  : 'bg-red-50 text-red-700 border-red-300'
+              }`}>
+                {message}
+              </div>
+            )}
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
@@ -244,7 +241,7 @@ const ManageParticipants: React.FC = () => {
                   showMessage('Participant added successfully!', 'success');
                 } catch (err) {
                   console.error('Error adding participant:', err);
-                  showMessage('Could not add participant because it already exists', 'error');
+                  showMessage('Could not add participant', 'error');
                 }
               }}
               className="space-y-4"
@@ -286,11 +283,6 @@ const ManageParticipants: React.FC = () => {
         </Card>
 
         <div className="flex items-center space-x-3 mb-4">
-          <input
-            type="checkbox"
-            checked={allSelected}
-            onChange={toggleSelectAll}
-          />
           <select
             value={bulkAction}
             onChange={(e) => setBulkAction(e.target.value)}
@@ -309,8 +301,23 @@ const ManageParticipants: React.FC = () => {
         </div>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between">
             <CardTitle>All Participants</CardTitle>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={selectedIds.length === participants.length}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedIds(participants.map((p) => p.id));
+                  } else {
+                    setSelectedIds([]);
+                  }
+                }}
+                className="h-4 w-4"
+              />
+              <span className="text-sm text-gray-600">Select All</span>
+            </div>
           </CardHeader>
           <CardContent>
             {participants.length > 0 ? (
@@ -354,24 +361,6 @@ const ManageParticipants: React.FC = () => {
             )}
           </CardContent>
         </Card>
-
-        {confirmDeleteModal?.open && (
-          <Modal
-            isOpen={true}
-            onClose={() => setConfirmDeleteModal(null)}
-            title="Confirm Deletion"
-          >
-            <p className="mb-4 text-sm text-gray-700">{confirmDeleteModal.text}</p>
-            <div className="flex justify-end space-x-3">
-              <Button variant="outline" onClick={() => setConfirmDeleteModal(null)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={confirmDeleteModal.onConfirm}>
-                Delete
-              </Button>
-            </div>
-          </Modal>
-        )}
       </div>
     </AuthGuard>
   );
