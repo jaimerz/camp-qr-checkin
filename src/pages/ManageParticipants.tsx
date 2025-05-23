@@ -218,7 +218,7 @@ const ManageParticipants: React.FC = () => {
                 e.preventDefault();
                 if (!activeEvent || !name || !church || !type) return;
 
-                const qrCode = `${activeEvent.id}::${church}::${name}`.toLowerCase().trim();
+                const qrCode = `${activeEvent.id}-${name}-${church}`.toLowerCase().trim();
                 const exists = participants.some(p => p.qrCode === qrCode);
 
                 if (exists) {
@@ -233,6 +233,7 @@ const ManageParticipants: React.FC = () => {
                     church,
                     type,
                     assignedLeaders: [],
+                    qrCode,
                   };
                   await createParticipant(newParticipant);
                   const updatedList = await getParticipantsByEvent(activeEvent.id);
@@ -303,12 +304,15 @@ const ManageParticipants: React.FC = () => {
         </div>
 
         <Card>
-          <CardHeader className="flex items-center justify-between">
+          <CardHeader>
             <CardTitle>All Participants</CardTitle>
-            <div className="flex items-center space-x-2">
+          </CardHeader>
+
+          <div className="flex justify-end px-6 pb-2 -mt-4">
+            <label className="flex items-center space-x-2 text-sm text-gray-600">
               <input
                 type="checkbox"
-                checked={selectedIds.length === participants.length}
+                checked={participants.length > 0 && selectedIds.length === participants.length}
                 onChange={(e) => {
                   if (e.target.checked) {
                     setSelectedIds(participants.map((p) => p.id));
@@ -318,9 +322,10 @@ const ManageParticipants: React.FC = () => {
                 }}
                 className="h-4 w-4"
               />
-              <span className="text-sm text-gray-600">Select All</span>
-            </div>
-          </CardHeader>
+              <span>Select All</span>
+            </label>
+          </div>
+
           <CardContent>
             {participants.length > 0 ? (
               <div className="space-y-2">
@@ -362,7 +367,7 @@ const ManageParticipants: React.FC = () => {
               <p className="text-sm text-gray-600">No participants found.</p>
             )}
           </CardContent>
-        </Card>
+      </Card>
       </div>
     </AuthGuard>
   );
