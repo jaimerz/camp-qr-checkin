@@ -1,22 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { getEvents } from '../../utils/firebase';
-import { Event } from '../../types';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, ChevronDown, LogOut, Settings, Users, Calendar, BarChart, Menu, X } from 'lucide-react';
-import { logoutUser } from '../../utils/firebase';
-import { User as UserType } from '../../types';
+import {
+  User,
+  ChevronDown,
+  LogOut,
+  Settings,
+  Calendar,
+  Menu,
+  X
+} from 'lucide-react';
+import { getEvents, logoutUser } from '../../utils/firebase';
+import { Event } from '../../types';
 import Button from '../ui/Button';
 import { useUser } from '../../contexts/UserContext';
 
 const Header: React.FC = () => {
-  const { user } = useUser();
+  const { user, loading } = useUser();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
-  
-  const { user: contextUser, loading } = useUser();
-  const isAdmin = contextUser?.role === 'admin' || user?.role === 'admin';
+
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     const fetchEvents = async () => {

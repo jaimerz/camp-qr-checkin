@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Users, MapPin, BarChart, Activity, QrCode } from 'lucide-react';
-import { getCurrentUser, getEvents } from '../utils/firebase';
-import { User, Event } from '../types';
+import { getEvents } from '../utils/firebase';
+import { Event } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import AuthGuard from '../components/AuthGuard';
@@ -10,37 +10,37 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { useUser } from '../contexts/UserContext';
 
 const Dashboard: React.FC = () => {
-  const { user, loading } = useUser();
+  const { user, loading: userLoading } = useUser();
   const [events, setEvents] = useState<Event[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const eventsData = await getEvents();
+        setEvents(eventsData);
+      } catch (error) {
+        console.error('Error fetching events:', error);
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
 
   const activeEvent = events
     .filter((event) => event.active)
     .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())[0];
   const activeEventId = activeEvent?.id;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const userResult = await getCurrentUser();
-        if (userResult) {
-          setUser(userResult.userData);
-        }
-        
-        const eventsData = await getEvents();
-        setEvents(eventsData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  if (loading) {
+  if (userLoading || loadingEvents) {
     return <LoadingSpinner />;
   }
+
+  if (!user) {
+    return <p className="text-center text-gray-600 mt-10">User not found. Please login again.</p>;
+  } 
 
   return (
     <AuthGuard>
