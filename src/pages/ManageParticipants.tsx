@@ -16,8 +16,9 @@ import {
 } from '../utils/firebase';
 import { generateQRCodePDF } from '../utils/qrcode';
 import { Event, Participant } from '../types';
+import { doc, updateDoc, getFirestore } from 'firebase/firestore';
 
-const ManageParticipants: React.FC = () => {
+  const ManageParticipants: React.FC = () => {
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +34,109 @@ const ManageParticipants: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
   const [confirmText, setConfirmText] = useState('');
-  const [assignedLeaders, setAssignedLeaders] = useState('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editParticipant, setEditParticipant] = useState<Participant | null>(null);
+  const [editType, setEditType] = useState<'student' | 'leader'>('student');
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [assignedLeaders, setAssignedLeaders] = useState<string[]>([]);
+  const [editLeaders, setEditLeaders] = useState<string[]>([]);
+  const leaderNames = Array.from(
+    new Set(participants.filter(p => p.type === 'leader').map(p => p.name))
+  );
+  
+  const TagInput: React.FC<{
+    tags: string[];
+    setTags: (tags: string[]) => void;
+    suggestions: string[];
+    placeholder?: string;
+  }> = ({ tags, setTags, suggestions, placeholder }) => {
+    const [input, setInput] = useState('');
+    const [filtered, setFiltered] = useState<string[]>([]);
+    const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+
+    useEffect(() => {
+      const f = suggestions
+        .filter(s => s.toLowerCase().includes(input.toLowerCase()) && !tags.includes(s));
+      setFiltered(input ? f : []);
+      setHighlightedIndex(-1);
+    }, [input, suggestions, tags]);
+
+    const addTag = (tagToAdd?: string) => {
+      const tag = (tagToAdd ?? input).trim();
+      if (tag && !tags.includes(tag)) {
+        setTags([...tags, tag]);
+      }
+      setInput('');
+      setHighlightedIndex(-1); // Optional safety
+    };
+
+    return (
+      <div className="relative border p-2 rounded w-full bg-white">
+        <div className="flex flex-wrap gap-2 mb-1">
+          {tags.map((tag, idx) => (
+            <span key={idx} className="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded flex items-center">
+              {tag}
+              <button
+                type="button"
+                className="ml-1 text-xs text-red-600 hover:text-red-800"
+                onClick={() => setTags(tags.filter((t) => t !== tag))}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              setHighlightedIndex((prev) =>
+                prev < filtered.length - 1 ? prev + 1 : 0
+              );
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              setHighlightedIndex((prev) =>
+                prev > 0 ? prev - 1 : filtered.length - 1
+              );
+            } else if (e.key === 'Enter') {
+              e.preventDefault();
+              if (highlightedIndex >= 0 && highlightedIndex < filtered.length) {
+                addTag(filtered[highlightedIndex]);
+              } else {
+                addTag(); // use input as fallback
+              }
+            } else if (e.key === ',') {
+              e.preventDefault();
+              addTag();
+            }
+          }}
+          placeholder={placeholder}
+          className="w-full outline-none"
+        />
+        {filtered.length > 0 && (
+          <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow">
+            {filtered.map((s, i) => (
+              <div
+                key={i}
+                className={`p-2 cursor-pointer text-sm ${
+                  i === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-100'
+                }`}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  addTag(s);
+                }}
+              >
+                {s}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   useEffect(() => {
     const fetchActiveEventAndParticipants = async () => {
@@ -147,6 +250,13 @@ const ManageParticipants: React.FC = () => {
     }
   };
 
+  const openEditModal = (p: Participant) => {
+    setEditParticipant(p);
+    setEditType(p.type);
+    setEditLeaders(p.assignedLeaders || []);
+    setEditModalOpen(true);
+  };
+
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -154,7 +264,7 @@ const ManageParticipants: React.FC = () => {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Manage Participants</h1>
         {message && (
-          <div className={`fixed top-6 right-6 z-50 shadow-lg text-sm px-4 py-2 rounded-md border transition-opacity duration-300 ${
+          <div className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-50 shadow-lg text-sm px-4 py-2 rounded-md border transition-opacity duration-300 ${
             messageType === 'success'
               ? 'bg-green-50 text-green-800 border-green-300'
               : 'bg-red-50 text-red-800 border-red-300'
@@ -215,91 +325,7 @@ const ManageParticipants: React.FC = () => {
             <CardTitle>Add New Participant</CardTitle>
           </CardHeader>
           <CardContent>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!activeEvent || !name || !church || !type) return;
-
-                const qrCode = generateDeterministicQrCode(activeEvent.id, name, church);
-
-                const refreshedList = await getParticipantsByEvent(activeEvent.id);
-                const exists = refreshedList.some(p => p.qrCode === qrCode);
-
-                if (exists) {
-                  showMessage('Participant already exists for this event.', 'error');
-                  return;
-                }
-
-                try {
-                  const newParticipant = {
-                    eventId: activeEvent.id,
-                    name,
-                    church,
-                    type,
-                    assignedLeaders: assignedLeaders
-                      .split(',')
-                      .map((s) => s.trim())
-                      .filter((s) => s.length > 0),
-                    qrCode,
-                  };
-                  await createParticipant(newParticipant);
-                  const updatedList = await getParticipantsByEvent(activeEvent.id);
-                  setParticipants(updatedList);
-                  setName('');
-                  setChurch('');
-                  setType('student');
-                  setAssignedLeaders('');
-                  showMessage('Participant added successfully!', 'success');
-                } catch (err) {
-                  console.error('Error adding participant:', err);
-                  showMessage('Could not add participant.', 'error');
-                }
-              }}
-              className="space-y-4"
-            >
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Church</label>
-                <input
-                  type="text"
-                  value={church}
-                  onChange={(e) => setChurch(e.target.value)}
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Type</label>
-                <select
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                >
-                  <option value="student">Student</option>
-                  <option value="leader">Leader</option>
-                </select>
-              </div>
-              <div>
-              <label className="block text-sm font-medium text-gray-700">Assigned Leaders</label>
-              <input
-                type="text"
-                value={assignedLeaders}
-                placeholder="Comma-separated names (optional)"
-                onChange={(e) => setAssignedLeaders(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-              />
-            </div>
-              <Button type="submit">Add Participant</Button>
-            </form>
+            <Button onClick={() => setAddModalOpen(true)}>Add Participant</Button>
           </CardContent>
         </Card>
 
@@ -365,6 +391,7 @@ const ManageParticipants: React.FC = () => {
                     </div>
                     <div className="flex items-center space-x-4">
                       <span className="text-sm text-gray-500">{participant.type}</span>
+                      <Button variant="outline" size="sm" onClick={() => openEditModal(participant)}>Edit</Button>
                       <button
                         onClick={() => handleDelete(participant)}
                         className="text-red-500 hover:text-red-700"
@@ -381,6 +408,132 @@ const ManageParticipants: React.FC = () => {
           </CardContent>
       </Card>
       </div>
+      <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} title="Edit Participant">
+        <div className="space-y-4">
+          <input
+            disabled
+            value={editParticipant?.name || ''}
+            className="w-full border p-2 bg-gray-100 rounded"
+          />
+          <input
+            disabled
+            value={editParticipant?.church || ''}
+            className="w-full border p-2 bg-gray-100 rounded"
+          />
+          <select
+            value={editType}
+            onChange={(e) => setEditType(e.target.value as 'student' | 'leader')}
+            className="w-full border p-2 rounded"
+          >
+            <option value="student">Student</option>
+            <option value="leader">Leader</option>
+          </select>
+          <TagInput
+            tags={editLeaders}
+            setTags={setEditLeaders}
+            suggestions={leaderNames}
+            placeholder="Type name and press Enter"
+          />
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setEditModalOpen(false)}>Cancel</Button>
+            <Button
+              onClick={async () => {
+                if (!editParticipant || !activeEvent) return;
+                try {
+                  const ref = doc(getFirestore(), 'events', activeEvent.id, 'participants', editParticipant.id);
+                  await updateDoc(ref, {
+                    type: editType,
+                    assignedLeaders: editLeaders,
+                  });
+                  const updatedList = await getParticipantsByEvent(activeEvent.id);
+                  setParticipants(updatedList);
+                  setEditModalOpen(false);
+                  showMessage('Participant updated.', 'success');
+                } catch (err) {
+                  console.error(err);
+                  showMessage('Failed to update participant.', 'error');
+                }
+              }}
+            >
+              Save
+            </Button>
+          </div>
+        </div>
+      </Modal>
+      <Modal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)} title="Add Participant">
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!activeEvent || !name || !church || !type) return;
+
+            const qrCode = generateDeterministicQrCode(activeEvent.id, name, church);
+            const refreshedList = await getParticipantsByEvent(activeEvent.id);
+            if (refreshedList.some(p => p.qrCode === qrCode)) {
+              showMessage('Participant already exists for this event.', 'error');
+              return;
+            }
+
+            try {
+              const newParticipant = {
+                eventId: activeEvent.id,
+                name,
+                church,
+                type,
+                assignedLeaders: assignedLeaders,
+                qrCode,
+              };
+              await createParticipant(newParticipant);
+              const updatedList = await getParticipantsByEvent(activeEvent.id);
+              setParticipants(updatedList);
+              setName('');
+              setChurch('');
+              setType('student');
+              setAssignedLeaders('');
+              setAddModalOpen(false);
+              showMessage('Participant added successfully!', 'success');
+            } catch (err) {
+              console.error('Error adding participant:', err);
+              showMessage('Could not add participant.', 'error');
+            }
+          }}
+          className="space-y-4"
+        >
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Name"
+            className="w-full border p-2 rounded"
+            required
+          />
+          <input
+            type="text"
+            value={church}
+            onChange={(e) => setChurch(e.target.value)}
+            placeholder="Church"
+            className="w-full border p-2 rounded"
+            required
+          />
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as 'student' | 'leader')}
+            className="w-full border p-2 rounded"
+          >
+            <option value="student">Student</option>
+            <option value="leader">Leader</option>
+          </select>
+          <TagInput
+            tags={assignedLeaders}
+            setTags={setAssignedLeaders}
+            suggestions={leaderNames}
+            placeholder="Type name and press Enter"
+          />
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setAddModalOpen(false)}>Cancel</Button>
+            <Button type="submit">Save</Button>
+          </div>
+        </form>
+      </Modal>
     </AuthGuard>
   );
 };
