@@ -325,6 +325,9 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
             <CardTitle>Add New Participant</CardTitle>
           </CardHeader>
           <CardContent>
+            <p className="text-sm text-gray-600 mb-4">
+              Add a new participant directly using the simple form by clicking the button below.
+            </p>
             <Button onClick={() => setAddModalOpen(true)}>Add Participant</Button>
           </CardContent>
         </Card>
