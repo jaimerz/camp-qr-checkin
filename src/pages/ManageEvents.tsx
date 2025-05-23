@@ -222,7 +222,7 @@ const ManageEvents: React.FC = () => {
                     {event.active ? 'Active' : 'Set Active'}
                   </Button>
                   <Button variant="destructive" onClick={() => openDeleteModal(event)} className="p-2" aria-label="Delete">
-                    <Trash2 className="h-5 w-5" />
+                    <Trash2 className="h-5 w-5 text-red-500 hover:text-red-700" />
                   </Button>
                 </div>
               </div>
