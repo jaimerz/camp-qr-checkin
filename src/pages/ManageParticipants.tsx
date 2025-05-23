@@ -82,16 +82,23 @@ const ManageParticipants: React.FC = () => {
     }
   };
 
-  const handleDelete = async (participantId: string) => {
-    if (!activeEvent) return;
+  const handleDelete = async (participant: Participant) => {
+    const confirmed = window.confirm(
+        `Are you sure you want to delete ${participant.name}? This will also delete their activity logs.`
+    );
+    if (!confirmed) return;
+
     try {
-      await deleteParticipant(participantId);
-      const updatedList = await getParticipantsByEvent(activeEvent.id);
-      setParticipants(updatedList);
+        await deleteParticipantWithLogs(participant.eventId, participant.id);
+        const updatedList = await getParticipantsByEvent(participant.eventId);
+        setParticipants(updatedList);
+        showMessage('Participant and logs deleted successfully', 'success');
     } catch (error) {
-      console.error('Error deleting participant:', error);
+        console.error('Error deleting participant and logs:', error);
+        showMessage('Error deleting participant', 'error');
     }
   };
+
 
   if (loading) return <LoadingSpinner />;
 
@@ -250,18 +257,7 @@ const ManageParticipants: React.FC = () => {
                     <div className="flex items-center space-x-4">
                       <span className="text-sm text-gray-500">{participant.type}</span>
                       <button
-                        onClick={async () => {
-                            const confirmDelete = window.confirm(`Delete ${participant.name}?`);
-                            if (!confirmDelete) return;
-
-                            try {
-                            await handleDelete(participant.id);
-                            showMessage('Participant deleted', 'success');
-                            } catch (err) {
-                            console.error(err);
-                            showMessage('Could not delete participant', 'error');
-                            }
-                        }}
+                        onClick={() => handleDelete(participant)}
                         className="text-red-500 hover:text-red-700"
                         >
                         <Trash2 className="h-5 w-5" />

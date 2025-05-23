@@ -18,11 +18,26 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-export const deleteParticipant = async (participantId: string): Promise<void> => {
+export const deleteParticipantWithLogs = async (eventId: string, participantId: string) => {
   const db = getFirestore();
-  const participantRef = doc(db, 'participants', participantId);
-  await deleteDoc(participantRef);
+  
+  // Delete logs
+  const logsQuery = query(
+    collection(db, 'activityLogs'),
+    where('participantId', '==', participantId)
+  );
+  const logsSnapshot = await getDocs(logsQuery);
+
+  const batch = writeBatch(db);
+  logsSnapshot.forEach((doc) => batch.delete(doc.ref));
+
+  // Delete participant
+  const participantRef = doc(db, `events/${eventId}/participants/${participantId}`);
+  batch.delete(participantRef);
+
+  await batch.commit();
 };
+
 
 export const updateParticipantLocation = async (
   eventId: string,
