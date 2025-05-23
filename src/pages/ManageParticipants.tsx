@@ -118,30 +118,30 @@ const ManageParticipants: React.FC = () => {
     );
   };
 
-  const handleBulkAction = async () => {
+  const handleBulkAction = () => {
     if (bulkAction === 'delete') {
       const count = selectedIds.length;
       if (count === 0 || !activeEvent) return;
 
-      const confirmed = window.confirm(
-        `Are you sure you want to delete ${count} participant${count > 1 ? 's' : ''}? This will also delete their activity logs.`
-      );
-
-      if (!confirmed) return;
-
-      try {
-        for (const id of selectedIds) {
-          await deleteParticipantWithLogs(activeEvent.id, id);
+      openConfirmModal(
+        `Are you sure you want to delete ${count} participant${count > 1 ? 's' : ''}? This will also delete their activity logs.`,
+        async () => {
+          try {
+            for (const id of selectedIds) {
+              await deleteParticipantWithLogs(activeEvent.id, id);
+            }
+            const updatedList = await getParticipantsByEvent(activeEvent.id);
+            setParticipants(updatedList);
+            setSelectedIds([]);
+            setBulkAction('');
+            showMessage('Selected participants deleted.', 'success');
+          } catch (err) {
+            console.error('Bulk delete error:', err);
+            showMessage('Failed to delete some participants.', 'error');
+          }
+          setModalOpen(false);
         }
-        const updatedList = await getParticipantsByEvent(activeEvent.id);
-        setParticipants(updatedList);
-        setSelectedIds([]);
-        setBulkAction('');
-        showMessage('Selected participants deleted.', 'success');
-      } catch (err) {
-        console.error('Bulk delete error:', err);
-        showMessage('Failed to delete some participants.', 'error');
-      }
+      );
     }
   };
 
@@ -223,7 +223,7 @@ const ManageParticipants: React.FC = () => {
 
                 if (exists) {
                   showMessage('Participant already exists for this event.', 'error');
-                  return; // ✅ Early return prevents fallback error from triggering
+                  return;
                 }
 
                 try {
