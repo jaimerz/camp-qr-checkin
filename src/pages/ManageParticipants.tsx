@@ -132,25 +132,35 @@ const ManageParticipants: React.FC = () => {
                     e.preventDefault();
                     if (!activeEvent || !name || !church || !type) return;
 
+                    const qrCode = `${activeEvent.id}::${church}::${name}`.toLowerCase().trim();
+                    const exists = participants.some(p => p.qrCode === qrCode);
+
+                    if (exists) {
+                        alert('Participant already exists for this event.');
+                        return;
+                    }
+
                     try {
-                    const newParticipant = {
+                        const newParticipant = {
                         eventId: activeEvent.id,
                         name,
                         church,
                         type,
                         assignedLeaders: [],
-                    };
-                    await createParticipant(newParticipant);
-                    const updatedList = await getParticipantsByEvent(activeEvent.id);
-                    setParticipants(updatedList);
-                    setName('');
-                    setChurch('');
-                    setType('student');
+                        };
+                        await createParticipant(newParticipant);
+                        const updatedList = await getParticipantsByEvent(activeEvent.id);
+                        setParticipants(updatedList);
+                        setName('');
+                        setChurch('');
+                        setType('student');
+                        alert('Participant added successfully!');
                     } catch (err) {
-                    console.error('Error adding participant:', err);
-                    alert('Could not add participant');
+                        console.error('Error adding participant:', err);
+                        alert('Could not add participant');
                     }
                 }}
+
                 className="space-y-4"
                 >
                 <div>
