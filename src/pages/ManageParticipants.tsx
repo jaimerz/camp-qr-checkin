@@ -5,7 +5,7 @@ import AuthGuard from '../components/AuthGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { getEvents, getParticipantsByEvent, resetTestData, createParticipant, deleteParticipant } from '../utils/firebase';
+import { getEvents, getParticipantsByEvent, resetTestData, createParticipant, deleteParticipantWithLogs } from '../utils/firebase';
 import { generateQRCodePDF } from '../utils/qrcode';
 import { Event, Participant } from '../types';
 
