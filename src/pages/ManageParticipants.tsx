@@ -17,6 +17,7 @@ import {
 import { generateQRCodePDF } from '../utils/qrcode';
 import { Event, Participant } from '../types';
 import { doc, updateDoc, getFirestore } from 'firebase/firestore';
+import React from 'react';
 
 const ManageParticipants: React.FC = () => {
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
@@ -34,12 +35,62 @@ const ManageParticipants: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
   const [confirmText, setConfirmText] = useState('');
-  const [assignedLeaders, setAssignedLeaders] = useState('');
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editParticipant, setEditParticipant] = useState<Participant | null>(null);
   const [editType, setEditType] = useState<'student' | 'leader'>('student');
-  const [editLeaders, setEditLeaders] = useState<string>('');
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [assignedLeaders, setAssignedLeaders] = useState<string[]>([]);
+  const [editLeaders, setEditLeaders] = useState<string[]>([]);
+  
+  const TagInput: React.FC<{
+    tags: string[];
+    setTags: (tags: string[]) => void;
+    placeholder?: string;
+  }> = ({ tags, setTags, placeholder }) => {
+    const [input, setInput] = useState('');
+
+    const addTag = () => {
+      const trimmed = input.trim();
+      if (trimmed && !tags.includes(trimmed)) {
+        setTags([...tags, trimmed]);
+      }
+      setInput('');
+    };
+
+    return (
+      <div className="border p-2 rounded w-full">
+        <div className="flex flex-wrap gap-2 mb-1">
+          {tags.map((tag, idx) => (
+            <span key={idx} className="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded flex items-center">
+              {tag}
+              <button
+                type="button"
+                className="ml-1 text-xs text-red-600 hover:text-red-800"
+                onClick={() => setTags(tags.filter((t) => t !== tag))}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+              e.preventDefault();
+              addTag();
+            }
+          }}
+          onBlur={addTag}
+          placeholder={placeholder}
+          className="w-full outline-none"
+        />
+      </div>
+    );
+  };
+
 
   useEffect(() => {
     const fetchActiveEventAndParticipants = async () => {
@@ -156,7 +207,7 @@ const ManageParticipants: React.FC = () => {
   const openEditModal = (p: Participant) => {
     setEditParticipant(p);
     setEditType(p.type);
-    setEditLeaders((p.assignedLeaders || []).join(', '));
+    setEditLeaders(p.assignedLeaders || []);
     setEditModalOpen(true);
   };
 
@@ -331,12 +382,10 @@ const ManageParticipants: React.FC = () => {
             <option value="student">Student</option>
             <option value="leader">Leader</option>
           </select>
-          <input
-            type="text"
-            value={editLeaders}
-            onChange={(e) => setEditLeaders(e.target.value)}
-            placeholder="Comma-separated leaders"
-            className="w-full border p-2 rounded"
+          <TagInput
+            tags={editLeaders}
+            setTags={setEditLeaders}
+            placeholder="Type name and press Enter"
           />
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => setEditModalOpen(false)}>Cancel</Button>
@@ -347,10 +396,7 @@ const ManageParticipants: React.FC = () => {
                   const ref = doc(getFirestore(), 'events', activeEvent.id, 'participants', editParticipant.id);
                   await updateDoc(ref, {
                     type: editType,
-                    assignedLeaders: editLeaders
-                      .split(',')
-                      .map((s) => s.trim())
-                      .filter(Boolean),
+                    assignedLeaders: editLeaders,
                   });
                   const updatedList = await getParticipantsByEvent(activeEvent.id);
                   setParticipants(updatedList);
@@ -386,10 +432,7 @@ const ManageParticipants: React.FC = () => {
                 name,
                 church,
                 type,
-                assignedLeaders: assignedLeaders
-                  .split(',')
-                  .map((s) => s.trim())
-                  .filter((s) => s.length > 0),
+                assignedLeaders: assignedLeaders,
                 qrCode,
               };
               await createParticipant(newParticipant);
@@ -432,12 +475,10 @@ const ManageParticipants: React.FC = () => {
             <option value="student">Student</option>
             <option value="leader">Leader</option>
           </select>
-          <input
-            type="text"
-            value={assignedLeaders}
-            onChange={(e) => setAssignedLeaders(e.target.value)}
-            placeholder="Comma-separated leaders (optional)"
-            className="w-full border p-2 rounded"
+          <TagInput
+            tags={assignedLeaders}
+            setTags={setAssignedLeaders}
+            placeholder="Type name and press Enter"
           />
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => setAddModalOpen(false)}>Cancel</Button>
