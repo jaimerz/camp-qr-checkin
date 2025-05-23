@@ -81,28 +81,32 @@ const ManageActivities: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    openConfirmModal('Are you sure you want to delete this activity?', async () => {
-      if (!activeEvent) return;
-      await deleteActivity(activeEvent.id, id);
-      const updated = await getActivitiesByEvent(activeEvent.id);
-      setActivities(updated);
-      showMessage('Activity deleted.', 'success');
-      setModalOpen(false);
+    openConfirmModal(
+      'Are you sure you want to delete this activity? All participant records (logs) linked to it will also be permanently deleted.',
+      async () => {
+        if (!activeEvent) return;
+        await deleteActivity(activeEvent.id, id);
+        const updated = await getActivitiesByEvent(activeEvent.id);
+        setActivities(updated);
+        showMessage('Activity deleted.', 'success');
+        setModalOpen(false);
     });
   };
 
   const handleBulkAction = () => {
     if (bulkAction === 'delete' && selectedIds.length && activeEvent) {
-      openConfirmModal(`Delete ${selectedIds.length} selected activities?`, async () => {
-        for (const id of selectedIds) {
-          await deleteActivity(activeEvent.id, id);
-        }
-        const updated = await getActivitiesByEvent(activeEvent.id);
-        setActivities(updated);
-        setSelectedIds([]);
-        setBulkAction('');
-        showMessage('Activities deleted.', 'success');
-        setModalOpen(false);
+      openConfirmModal(
+        `Are you sure you want to delete ${selectedIds.length} selected activities? This will also delete all logs linked to these activities.`,
+        async () => {
+          for (const id of selectedIds) {
+            await deleteActivity(activeEvent.id, id);
+          }
+          const updated = await getActivitiesByEvent(activeEvent.id);
+          setActivities(updated);
+          setSelectedIds([]);
+          setBulkAction('');
+          showMessage('Activities deleted.', 'success');
+          setModalOpen(false);
       });
     }
   };
