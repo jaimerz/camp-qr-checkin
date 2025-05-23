@@ -219,7 +219,8 @@ const ManageParticipants: React.FC = () => {
                 if (!activeEvent || !name || !church || !type) return;
 
                 const qrCode = `${activeEvent.id}-${name}-${church}`.toLowerCase().trim();
-                const exists = participants.some(p => p.qrCode === qrCode);
+                const refreshedList = await getParticipantsByEvent(activeEvent.id);
+                const exists = refreshedList.some(p => p.qrCode === qrCode);
 
                 if (exists) {
                   showMessage('Participant already exists for this event.', 'error');
