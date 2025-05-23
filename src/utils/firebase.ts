@@ -614,3 +614,8 @@ export async function resetTestData(eventId: string) {
     }
   }
 }
+
+export async function deleteActivity(_eventId: string, activityId: string) {
+  const ref = doc(db, 'activities', activityId);
+  await deleteDoc(ref);
+}
