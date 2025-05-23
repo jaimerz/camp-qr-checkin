@@ -34,6 +34,10 @@ const ManageParticipants: React.FC = () => {
   const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
   const [confirmText, setConfirmText] = useState('');
   const [assignedLeaders, setAssignedLeaders] = useState('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editParticipant, setEditParticipant] = useState<Participant | null>(null);
+  const [editType, setEditType] = useState<'student' | 'leader'>('student');
+  const [editLeaders, setEditLeaders] = useState<string>('');
 
   useEffect(() => {
     const fetchActiveEventAndParticipants = async () => {
@@ -145,6 +149,13 @@ const ManageParticipants: React.FC = () => {
         }
       );
     }
+  };
+
+  const openEditModal = (p: Participant) => {
+    setEditParticipant(p);
+    setEditType(p.type);
+    setEditLeaders((p.assignedLeaders || []).join(', '));
+    setEditModalOpen(true);
   };
 
   if (loading) return <LoadingSpinner />;
@@ -365,6 +376,7 @@ const ManageParticipants: React.FC = () => {
                     </div>
                     <div className="flex items-center space-x-4">
                       <span className="text-sm text-gray-500">{participant.type}</span>
+                      <Button variant="outline" size="sm" onClick={() => openEditModal(participant)}>Edit</Button>
                       <button
                         onClick={() => handleDelete(participant)}
                         className="text-red-500 hover:text-red-700"
@@ -381,6 +393,62 @@ const ManageParticipants: React.FC = () => {
           </CardContent>
       </Card>
       </div>
+      <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} title="Edit Participant">
+        <div className="space-y-4">
+          <input
+            disabled
+            value={editParticipant?.name || ''}
+            className="w-full border p-2 bg-gray-100 rounded"
+          />
+          <input
+            disabled
+            value={editParticipant?.church || ''}
+            className="w-full border p-2 bg-gray-100 rounded"
+          />
+          <select
+            value={editType}
+            onChange={(e) => setEditType(e.target.value as 'student' | 'leader')}
+            className="w-full border p-2 rounded"
+          >
+            <option value="student">Student</option>
+            <option value="leader">Leader</option>
+          </select>
+          <input
+            type="text"
+            value={editLeaders}
+            onChange={(e) => setEditLeaders(e.target.value)}
+            placeholder="Comma-separated leaders"
+            className="w-full border p-2 rounded"
+          />
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setEditModalOpen(false)}>Cancel</Button>
+            <Button
+              onClick={async () => {
+                if (!editParticipant || !activeEvent) return;
+                try {
+                  const ref = doc(getFirestore(), 'events', activeEvent.id, 'participants', editParticipant.id);
+                  await updateDoc(ref, {
+                    type: editType,
+                    assignedLeaders: editLeaders
+                      .split(',')
+                      .map((s) => s.trim())
+                      .filter(Boolean),
+                  });
+                  const updatedList = await getParticipantsByEvent(activeEvent.id);
+                  setParticipants(updatedList);
+                  setEditModalOpen(false);
+                  showMessage('Participant updated.', 'success');
+                } catch (err) {
+                  console.error(err);
+                  showMessage('Failed to update participant.', 'error');
+                }
+              }}
+            >
+              Save
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </AuthGuard>
   );
 };
