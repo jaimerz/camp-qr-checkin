@@ -317,12 +317,7 @@ const EventDetail: React.FC = () => {
         <div className="space-y-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>All Activities</CardTitle>
-              <Link to={`/activities/new/${eventId}`}>
-                <Button size="sm">
-                  Add Activity
-                </Button>
-              </Link>
+              <CardTitle>All Activities</CardTitle>              
             </CardHeader>
             <CardContent>
               {activities.length > 0 ? (
@@ -357,12 +352,9 @@ const EventDetail: React.FC = () => {
                 <div className="text-center py-8">
                   <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Activities Yet</h3>
-                  <p className="text-gray-500 mb-6">
-                    Create activities to track participant attendance.
+                  <p className="text-gray-500">
+                    Activities will appear here once an admin adds them.
                   </p>
-                  <Link to={`/activities/new/${eventId}`}>
-                    <Button>Add Activity</Button>
-                  </Link>
                 </div>
               )}
             </CardContent>
