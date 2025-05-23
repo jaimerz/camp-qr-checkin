@@ -100,15 +100,31 @@ const ManageEvents: React.FC = () => {
 
   const openDeleteModal = (event: Event) => {
     setTargetEventName(event.name);
-    setConfirmText(`Type "I want to delete ${event.name}" to confirm deletion. This will erase ALL participants, activities, and logs linked to this event.`);
+    setConfirmText(
+      `Type "I want to delete ${event.name}" to confirm deletion. This will erase ALL participants, activities, and logs linked to this event.`
+    );
+
     setConfirmAction(() => async () => {
-      if (confirmInput !== `I want to delete ${event.name}`) return;
-      await deleteEventWithCascade(event.id);
-      setModalOpen(false);
-      setConfirmInput('');
-      fetchEvents();
-      showMessage('Event deleted.', 'success');
+      if (confirmInput !== `I want to delete ${event.name}`) {
+        showMessage('Confirmation text does not match.', 'error');
+        return;
+      }
+
+      try {
+        await deleteEventWithCascade(event.id);
+        showMessage('Event deleted.', 'success');
+        fetchEvents();
+      } catch (err) {
+        console.error(err);
+        showMessage('Failed to delete event.', 'error');
+      } finally {
+        setModalOpen(false);
+        setConfirmInput('');
+      }
     });
+
+    // reset previous input before showing modal
+    setConfirmInput('');
     setModalOpen(true);
   };
 
