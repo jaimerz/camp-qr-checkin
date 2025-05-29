@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Calendar, Users, MapPin, ArrowLeft, RefreshCw } from 'lucide-react';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Calendar, Users, MapPin, RefreshCw } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Tabs from '../components/ui/Tabs';
@@ -12,8 +12,7 @@ import {
   getActivitiesByEvent,
   getEventById,
   getParticipantsByActivityId,
-  getParticipantsAtCamp,
-  resetTestData
+  getParticipantsAtCamp
 } from '../utils/firebase';
 import { Participant, Activity, Event } from '../types';
 import { formatDate } from '../utils/helpers';
@@ -26,8 +25,8 @@ const EventDetail: React.FC = () => {
   const [participantsAtCamp, setParticipantsAtCamp] = useState<Participant[]>([]);
   const [participantsByActivity, setParticipantsByActivity] = useState<Record<string, Participant[]>>({});
   const [loading, setLoading] = useState(true);
-  const [resetting, setResetting] = useState(false);
   const [activeTabId, setActiveTabId] = useState('overview');
+  const location = useLocation();
 
   const fetchData = async () => {
     if (!eventId) return;
@@ -70,39 +69,13 @@ const EventDetail: React.FC = () => {
     fetchData();
   }, [eventId]);
 
-  const refreshLiveData = async () => {
-    if (!eventId) return;
-
-    try {
-      const atCampData = await getParticipantsAtCamp(eventId);
-      setParticipantsAtCamp(atCampData);
-    
-      const byActivityData: Record<string, Participant[]> = {};
-      for (const activity of activities) {
-        const activityParticipants = await getParticipantsByActivityId(eventId!, activity.id);
-        byActivityData[activity.id] = activityParticipants;
-      }
-      setParticipantsByActivity(byActivityData);
-    } catch (error) {
-      console.error('Error refreshing live data:', error);
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && tabs.some(t => t.id === tab)) {
+      setActiveTabId(tab);
     }
-  };
-
-  const handleResetTestData = async () => {
-    if (!eventId) return;
-    
-    setResetting(true);
-    try {
-      await resetTestData(eventId);
-      
-      // Refresh data
-      await refreshLiveData();
-    } catch (error) {
-      console.error('Error resetting test data:', error);
-    } finally {
-      setResetting(false);
-    }
-  };
+  }, [location.search]);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -173,17 +146,6 @@ const EventDetail: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-          
-          <div className="flex space-x-4">
-            <Button 
-              variant="outline" 
-              onClick={handleResetTestData}
-              isLoading={resetting}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reset Test Data
-            </Button>
-          </div>
         </div>
       ),
     },
@@ -281,7 +243,7 @@ const EventDetail: React.FC = () => {
                   {participants.map((participant) => (
                     <Link 
                       key={participant.id}
-                      to={`/events/${participant.eventId}/participants/${participant.qrCode}`}
+                      to={`/events/${participant.eventId}/participants/${participant.qrCode}?fromTab=${activeTabId}`}
                       className="block"
                     >
                       <div className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50">
@@ -368,12 +330,6 @@ const EventDetail: React.FC = () => {
     <AuthGuard>
       <div className="space-y-6">
         <div className="flex items-center mb-6">
-          <Link to="/dashboard" className="mr-4">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back
-            </Button>
-          </Link>
           <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
         </div>
         

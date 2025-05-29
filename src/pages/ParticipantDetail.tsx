@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, MapPin, User } from 'lucide-react';
-import { getParticipantActivityLogs, getParticipantById, getParticipantByQrCode } from '../utils/firebase';
+import { getParticipantActivityLogs, getParticipantByQrCode } from '../utils/firebase';
 import { ActivityLog, Participant } from '../types';
 import { formatDateTime } from '../utils/helpers';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
@@ -47,15 +47,20 @@ const ParticipantDetail: React.FC = () => {
       </Card>
     );
   }
+  
+  const location = useLocation();
+  const navigate = useNavigate();
+  const fromTab = new URLSearchParams(location.search).get('fromTab') || 'overview';
 
   return (
     <AuthGuard>
       <div className="space-y-6">
-        <Link to={`/events/${eventId}`}>
-          <button className="text-sm text-teal-600 flex items-center mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Event
-          </button>
-        </Link>
+        <button
+          className="text-sm text-teal-600 flex items-center mb-4"
+          onClick={() => navigate(`/events/${eventId}?tab=${fromTab}`)}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Participants
+        </button>
 
         <Card>
           <CardHeader>
