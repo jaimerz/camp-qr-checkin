@@ -43,22 +43,23 @@ export async function generateQRCodePDF(
   } = options;
 
   // Badge size calculated to fit maximum full badges per page
-  const topPadding = qrSize * 0.2;
-  const bottomPadding = qrSize * 0.2;
-  const qrGap = qrSize * 0.15;
+  const topPadding = qrSize * 0.15;
+  const bottomPadding = qrSize * 0.1;
+  const qrGap = qrSize * 0.1;
 
-  let textHeight = qrSize * 0.35; // name always shown
-  if (showChurch) textHeight += qrSize * 0.28 + 1.5;
-  if (showType) textHeight += qrSize * 0.3 + 1.5;
+  let textHeight = 0;
+  textHeight += qrSize * 0.35; // name
+  if (showChurch) textHeight += qrSize * 0.26;
+  if (showType) textHeight += qrSize * 0.26;
 
   let badgeHeight = topPadding + qrSize + qrGap + textHeight + bottomPadding;
-  badgeHeight = Math.min(badgeHeight, pageHeight - marginY * 2);
-  badgeHeight = Math.max(badgeHeight, 40); // minimum safety
+  badgeHeight = Math.max(40, Math.min(badgeHeight, pageHeight - marginY * 2));
 
   let badgeWidth = qrSize + qrSize * 0.6;
-
-  badgeHeight = Math.min(badgeHeight, pageHeight - marginY * 2);
   badgeWidth = Math.min(badgeWidth, pageWidth - marginX * 2);
+
+  badgeHeight = Math.round(badgeHeight * 10) / 10;
+  badgeWidth = Math.round(badgeWidth * 10) / 10;
 
   const columns = Math.floor((pageWidth - 2 * marginX + spacingX) / (badgeWidth + spacingX));
   const rows = Math.floor((pageHeight - 2 * marginY + spacingY) / (badgeHeight + spacingY));
@@ -88,18 +89,18 @@ export async function generateQRCodePDF(
     doc.setFillColor(255, 255, 255);
     doc.roundedRect(x, y, badgeWidth, badgeHeight, badgeCornerRadius, badgeCornerRadius, 'FD');
 
-    let cursorY = y + qrSize * 0.15;
+    let cursorY = y + topPadding;
 
     // QR Code
     doc.addImage(qrDataUrl, 'PNG', centerX - qrSize / 2, cursorY, qrSize, qrSize);
-    cursorY += qrSize + 6;
+    cursorY += qrSize + qrGap;
 
     // Name
     doc.setFontSize(qrSize * 0.4);
     doc.setTextColor(...hexToRgb(nameColor));
     doc.setFont(undefined, 'bold');
     doc.text(p.name, centerX, cursorY, { align: 'center' });
-    cursorY += 7;
+    cursorY += qrSize * 0.35;
 
     // Church
     if (showChurch) {
@@ -107,7 +108,7 @@ export async function generateQRCodePDF(
       doc.setTextColor(...hexToRgb(churchColor));
       doc.setFont(undefined, 'normal');
       doc.text(p.church, centerX, cursorY, { align: 'center' });
-      cursorY += 6;
+      cursorY += qrSize * 0.26;
     }
 
     // Type
