@@ -122,8 +122,8 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
                 className={`p-2 cursor-pointer text-sm ${
                   i === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-100'
                 }`}
-                onMouseDown={(e) => {
-                  e.preventDefault();
+                onPointerDown={(e) => {
+                  e.preventDefault(); // Prevent focus/blur
                   addTag(s);
                 }}
               >
