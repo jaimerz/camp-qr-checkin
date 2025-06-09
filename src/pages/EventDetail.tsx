@@ -36,7 +36,6 @@ const EventDetail: React.FC = () => {
 
     if (tabParam && activeTabId === 'overview') {
       setActiveTabId(tabParam);
-      console.log('Set tab from URL:', tabParam);
 
       // Clean the URL without reloading
       const cleanedUrl = `${window.location.origin}${window.location.pathname}${window.location.hash.split('?')[0]}`;
@@ -80,12 +79,6 @@ const EventDetail: React.FC = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (!loading && activeTabId === 'overview') {
-      console.log('Still in overview after loading — fallback could go here.');
-    }
-  }, [loading, activeTabId]);
   
   useEffect(() => {
     fetchData();
@@ -375,7 +368,6 @@ const EventDetail: React.FC = () => {
           tabs={tabs}
           activeTabId={activeTabId}
           onTabChange={(id) => {
-            console.log('Tab manually changed to:', id);
             setActiveTabId(id);
           }}
         />
