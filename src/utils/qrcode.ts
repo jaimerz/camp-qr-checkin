@@ -43,8 +43,19 @@ export async function generateQRCodePDF(
   } = options;
 
   // Badge size calculated to fit maximum full badges per page
-  const badgeWidth = qrSize + 2 * qrSize * 0.6;  // QR + text space top/bottom
-  const badgeHeight = qrSize + 3 * qrSize * 0.6; // QR + name + church + type
+  const verticalPadding = qrSize * 0.25;
+  const qrGap = qrSize * 0.2;
+
+  let textHeight = qrSize * 0.4; // name
+  if (options.showChurch) textHeight += qrSize * 0.3;
+  if (options.showType) textHeight += qrSize * 0.33;
+  textHeight += qrSize * 0.4; // line spacing buffer
+
+  let badgeHeight = verticalPadding * 2 + qrSize + qrGap + textHeight;
+  let badgeWidth = qrSize + qrSize * 0.6;
+
+  badgeHeight = Math.min(badgeHeight, pageHeight - marginY * 2);
+  badgeWidth = Math.min(badgeWidth, pageWidth - marginX * 2);
 
   const columns = Math.floor((pageWidth - 2 * marginX + spacingX) / (badgeWidth + spacingX));
   const rows = Math.floor((pageHeight - 2 * marginY + spacingY) / (badgeHeight + spacingY));

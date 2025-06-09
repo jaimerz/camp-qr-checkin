@@ -117,6 +117,17 @@ const DownloadQrModal: React.FC<Props> = ({ isOpen, onClose, participants }) => 
         </div>
 
         <div className="flex justify-end space-x-2 mt-4">
+          <Button
+            variant="outline"
+            onClick={() => setOptions(defaultQRCodePDFOptions)}
+          >
+            Reset to Defaults
+          </Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleDownload}>Download PDF</Button>
+        </div>
+
+        <div className="flex justify-end space-x-2 mt-4">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleDownload}>Download PDF</Button>
         </div>
