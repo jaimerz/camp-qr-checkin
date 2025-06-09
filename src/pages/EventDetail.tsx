@@ -31,20 +31,18 @@ const EventDetail: React.FC = () => {
   useEffect(() => {
     const hash = location.hash; // e.g. "#/events/camp2025?fromTab=participants"
 
-    if (hash.includes('?')) {
-      const [pathOnly, queryString] = hash.split('?');
-      const params = new URLSearchParams(queryString);
-      const fromTab = params.get('fromTab');
+    const match = hash.match(/\?fromTab=(\w+)/);
+    const tabParam = match?.[1];
 
-      if (fromTab && activeTabId === 'overview') {
-        setActiveTabId(fromTab);
+    if (tabParam && activeTabId === 'overview') {
+      setActiveTabId(tabParam);
 
-        // Remove query params from the URL
-        const cleanedHash = pathOnly;
-        window.history.replaceState({}, '', window.location.pathname + cleanedHash);
-      }
+      // Clean the hash (remove query string) while keeping the route
+      const [cleanedHash] = hash.split('?');
+      window.history.replaceState({}, '', window.location.pathname + cleanedHash);
     }
-  }, [location]);
+  }, [location.hash]);
+
 
   const fetchData = async () => {
     if (!eventId) return;
