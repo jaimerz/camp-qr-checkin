@@ -81,13 +81,11 @@ export async function generateQRCodePDF(
     cursorY += qrSize + 6;
 
     // Name
-    if (showName) {
-      doc.setFontSize(qrSize * 0.4);
-      doc.setTextColor(...hexToRgb(nameColor));
-      doc.setFont(undefined, 'bold');
-      doc.text(p.name, centerX, cursorY, { align: 'center' });
-      cursorY += 7;
-    }
+    doc.setFontSize(qrSize * 0.4);
+    doc.setTextColor(...hexToRgb(nameColor));
+    doc.setFont(undefined, 'bold');
+    doc.text(p.name, centerX, cursorY, { align: 'center' });
+    cursorY += 7;
 
     // Church
     if (showChurch) {
