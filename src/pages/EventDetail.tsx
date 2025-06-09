@@ -324,7 +324,7 @@ const EventDetail: React.FC = () => {
               Sync View
             </Button>
           </div>
-          
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>All Activities</CardTitle>              
@@ -404,9 +404,14 @@ const EventDetail: React.FC = () => {
             {selectedActivityParticipants.length > 0 ? (
               <ul className="space-y-2 max-h-80 overflow-y-auto">
                 {selectedActivityParticipants.map((participant) => (
-                  <li key={participant.id} className="border p-3 rounded-md">
-                    <p className="font-medium">{participant.name}</p>
-                    <p className="text-sm text-gray-500">{participant.church}</p>
+                  <li
+                    key={participant.id}
+                    className="border p-3 rounded-md flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-medium">{participant.name}</p>
+                      <p className="text-sm text-gray-500">{participant.church}</p>
+                    </div>
                     <Badge variant={participant.type === 'student' ? 'primary' : 'secondary'}>
                       {participant.type}
                     </Badge>
