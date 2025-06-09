@@ -29,20 +29,20 @@ const EventDetail: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const hash = location.hash; // e.g. "#/events/camp2025?fromTab=participants"
+    if (loading) return;
 
-    const match = hash.match(/\?fromTab=(\w+)/);
-    const tabParam = match?.[1];
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('fromTab');
 
     if (tabParam && activeTabId === 'overview') {
       setActiveTabId(tabParam);
+      console.log('Set tab from URL:', tabParam);
 
-      // Clean the hash (remove query string) while keeping the route
-      const [cleanedHash] = hash.split('?');
-      window.history.replaceState({}, '', window.location.pathname + cleanedHash);
+      // Clean the URL without reloading
+      const cleanedUrl = `${window.location.pathname}${location.hash}`;
+      window.history.replaceState({}, '', cleanedUrl);
     }
-  }, [location.hash]);
-
+  }, [location.search, loading]);
 
   const fetchData = async () => {
     if (!eventId) return;
@@ -79,7 +79,13 @@ const EventDetail: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };  
+  };
+
+  useEffect(() => {
+    if (!loading && activeTabId === 'overview') {
+      console.log('Still in overview after loading — fallback could go here.');
+    }
+  }, [loading, activeTabId]);
   
   useEffect(() => {
     fetchData();
@@ -365,10 +371,13 @@ const EventDetail: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
         </div>
         
-        <Tabs 
+        <Tabs
           tabs={tabs}
           activeTabId={activeTabId}
-          onTabChange={setActiveTabId}
+          onTabChange={(id) => {
+            console.log('Tab manually changed to:', id);
+            setActiveTabId(id);
+          }}
         />
       </div>
     </AuthGuard>
