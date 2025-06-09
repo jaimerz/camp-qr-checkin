@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { Calendar, Users, MapPin, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -26,6 +26,18 @@ const EventDetail: React.FC = () => {
   const [participantsByActivity, setParticipantsByActivity] = useState<Record<string, Participant[]>>({});
   const [loading, setLoading] = useState(true);
   const [activeTabId, setActiveTabId] = useState('overview');
+  const location = useLocation();
+
+  useEffect(() => {
+  if (typeof window !== 'undefined') {
+    const hash = location.hash || '';
+    const queryString = hash.includes('?') ? hash.split('?')[1] : '';
+    const tabParam = new URLSearchParams(queryString).get('tab');
+    if (tabParam) {
+      setActiveTabId(tabParam);
+    }
+  }
+}, [location]);
 
   const fetchData = async () => {
     if (!eventId) return;
@@ -252,7 +264,7 @@ const EventDetail: React.FC = () => {
                   {participants.map((participant) => (
                     <Link 
                       key={participant.id}
-                      to={`/events/${participant.eventId}/participants/${participant.qrCode}?fromTab=participants`}
+                      to={`/events/${participant.eventId}/participants/${participant.qrCode}`}
                       className="block"
                     >
                       <div className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50">

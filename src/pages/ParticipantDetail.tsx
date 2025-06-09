@@ -14,7 +14,6 @@ const ParticipantDetail: React.FC = () => {
   const [participant, setParticipant] = useState<Participant | null>(null);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [fromTab, setFromTab] = useState('overview');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,14 +39,6 @@ const ParticipantDetail: React.FC = () => {
     fetchData();
   }, [eventId, qrCode]);
 
-  // Extract fromTab using hash parsing (for HashRouter)
-  useEffect(() => {
-    const hash = window.location.hash || '';
-    const queryString = hash.includes('?') ? hash.split('?')[1] : '';
-    const tab = new URLSearchParams(queryString).get('fromTab');
-    setFromTab(tab || 'overview');
-  }, []);
-
   if (loading) return <LoadingSpinner />;
 
   if (!participant) {
@@ -63,7 +54,7 @@ const ParticipantDetail: React.FC = () => {
       <div className="space-y-6">
         <button
           className="text-sm text-teal-600 flex items-center mb-4"
-          onClick={() => navigate(`/events/${eventId}?tab=${fromTab}`)}
+          onClick={() => navigate(`/events/${eventId}?tab=participants`)}
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Participants
         </button>
