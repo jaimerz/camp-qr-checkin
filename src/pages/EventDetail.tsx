@@ -12,8 +12,7 @@ import {
   getActivitiesByEvent,
   getEventById,
   getParticipantsByActivityId,
-  getParticipantsAtCamp,
-  resetTestData
+  getParticipantsAtCamp
 } from '../utils/firebase';
 import { Participant, Activity, Event } from '../types';
 import { formatDate } from '../utils/helpers';
@@ -26,7 +25,6 @@ const EventDetail: React.FC = () => {
   const [participantsAtCamp, setParticipantsAtCamp] = useState<Participant[]>([]);
   const [participantsByActivity, setParticipantsByActivity] = useState<Record<string, Participant[]>>({});
   const [loading, setLoading] = useState(true);
-  const [resetting, setResetting] = useState(false);
   const [activeTabId, setActiveTabId] = useState('overview');
 
   const fetchData = async () => {
@@ -85,22 +83,6 @@ const EventDetail: React.FC = () => {
       setParticipantsByActivity(byActivityData);
     } catch (error) {
       console.error('Error refreshing live data:', error);
-    }
-  };
-
-  const handleResetTestData = async () => {
-    if (!eventId) return;
-    
-    setResetting(true);
-    try {
-      await resetTestData(eventId);
-      
-      // Refresh data
-      await refreshLiveData();
-    } catch (error) {
-      console.error('Error resetting test data:', error);
-    } finally {
-      setResetting(false);
     }
   };
 
@@ -173,17 +155,6 @@ const EventDetail: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-          
-          <div className="flex space-x-4">
-            <Button 
-              variant="outline" 
-              onClick={handleResetTestData}
-              isLoading={resetting}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reset Test Data
-            </Button>
-          </div>
         </div>
       ),
     },
