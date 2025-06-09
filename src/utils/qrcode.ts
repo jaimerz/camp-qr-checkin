@@ -95,7 +95,7 @@ export async function generateQRCodePDF(
     doc.addImage(qrDataUrl, 'PNG', centerX - qrSize / 2, cursorY, qrSize, qrSize);
     
     // Name
-    cursorY += qrSize + qrSize * 0.18;
+    cursorY += qrSize + qrSize * 0.25;
 
     doc.setFontSize(qrSize * 0.4);
     doc.setTextColor(...hexToRgb(nameColor));
