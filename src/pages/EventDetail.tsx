@@ -325,32 +325,27 @@ const EventDetail: React.FC = () => {
               {activities.length > 0 ? (
                 <div className="space-y-4">
                   {activities.map((activity) => (
-                    <Link 
+                    <Card
                       key={activity.id}
-                      to={`/activities/${activity.id}`}
-                      className="block"
+                      className="hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => openParticipantsModal(activity.id, activity.name)}
                     >
-                      <Card className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-4">
-                          <h3 className="font-medium text-lg">{activity.name}</h3>
-                          <p className="text-gray-500 text-sm">{activity.description}</p>
-                          <div className="mt-2 flex items-center">
-                            <MapPin className="h-4 w-4 text-gray-400 mr-1" />
-                            <span className="text-sm text-gray-500">{activity.location}</span>
-                          </div>
-                        </CardContent>
-                        <CardFooter className="bg-gray-50 py-2 px-4">
-                          <div className="flex justify-between items-center w-full">
-                            <button
-                              onClick={() => openParticipantsModal(activity.id, activity.name)}
-                              className="text-sm text-teal-600 underline hover:text-teal-800"
-                            >
-                              Participants: {participantsByActivity[activity.id]?.length || 0}
-                            </button>
-                          </div>
-                        </CardFooter>
-                      </Card>
-                    </Link>
+                      <CardContent className="p-4">
+                        <h3 className="font-medium text-lg">{activity.name}</h3>
+                        <p className="text-gray-500 text-sm">{activity.description}</p>
+                        <div className="mt-2 flex items-center">
+                          <MapPin className="h-4 w-4 text-gray-400 mr-1" />
+                          <span className="text-sm text-gray-500">{activity.location}</span>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="bg-gray-50 py-2 px-4">
+                        <div className="flex justify-between items-center w-full">
+                          <span className="text-sm text-teal-600 underline">
+                            Participants: {participantsByActivity[activity.id]?.length || 0}
+                          </span>
+                        </div>
+                      </CardFooter>
+                    </Card>
                   ))}
                 </div>
               ) : (
