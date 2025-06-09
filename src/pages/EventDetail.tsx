@@ -39,7 +39,7 @@ const EventDetail: React.FC = () => {
       console.log('Set tab from URL:', tabParam);
 
       // Clean the URL without reloading
-      const cleanedUrl = `${window.location.pathname}${location.hash}`;
+      const cleanedUrl = `${window.location.origin}${window.location.pathname}${window.location.hash.split('?')[0]}`;
       window.history.replaceState({}, '', cleanedUrl);
     }
   }, [location.search, loading]);
