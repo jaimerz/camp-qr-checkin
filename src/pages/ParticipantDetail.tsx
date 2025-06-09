@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Clock, MapPin, User } from 'lucide-react';
-import { getParticipantActivityLogs, getParticipantById, getParticipantByQrCode } from '../utils/firebase';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Clock, User } from 'lucide-react';
+import { getParticipantActivityLogs, getParticipantByQrCode } from '../utils/firebase';
 import { ActivityLog, Participant } from '../types';
 import { formatDateTime } from '../utils/helpers';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
@@ -14,6 +14,8 @@ const ParticipantDetail: React.FC = () => {
   const [participant, setParticipant] = useState<Participant | null>(null);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fromTab, setFromTab] = useState('overview');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,6 +40,14 @@ const ParticipantDetail: React.FC = () => {
     fetchData();
   }, [eventId, qrCode]);
 
+  // Extract fromTab using hash parsing (for HashRouter)
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    const queryString = hash.includes('?') ? hash.split('?')[1] : '';
+    const tab = new URLSearchParams(queryString).get('fromTab');
+    setFromTab(tab || 'overview');
+  }, []);
+
   if (loading) return <LoadingSpinner />;
 
   if (!participant) {
@@ -51,11 +61,12 @@ const ParticipantDetail: React.FC = () => {
   return (
     <AuthGuard>
       <div className="space-y-6">
-        <Link to={`/events/${eventId}`}>
-          <button className="text-sm text-teal-600 flex items-center mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Event
-          </button>
-        </Link>
+        <button
+          className="text-sm text-teal-600 flex items-center mb-4"
+          onClick={() => navigate(`/events/${eventId}?tab=${fromTab}`)}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Participants
+        </button>
 
         <Card>
           <CardHeader>
