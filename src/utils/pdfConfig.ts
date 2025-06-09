@@ -1,7 +1,6 @@
 export const defaultQRCodePDFOptions = {
   pageSize: 'a4',
   qrColor: '#000000',
-  showName: true,
   showChurch: true,
   showType: true,
   nameColor: '#000000',
