@@ -53,60 +53,44 @@ const DownloadQrModal: React.FC<Props> = ({ isOpen, onClose, participants }) => 
         </div>
 
         {/* DISPLAY OPTIONS */}
-        <div className="space-y-2">
-          <label>
-            <input
-              type="checkbox"
-              checked={options.showName}
-              onChange={(e) => setOptions({ ...options, showName: e.target.checked })}
-              className="mr-2"
-            />
-            Show Name
-          </label>
-          {options.showName && (
-            <input
-              type="color"
-              value={options.nameColor}
-              onChange={(e) => setOptions({ ...options, nameColor: e.target.value })}
-              className="ml-4"
-            />
-          )}
+        <div className="space-y-4">
+          <div>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={options.showChurch}
+                onChange={(e) => setOptions({ ...options, showChurch: e.target.checked })}
+              />
+              <span>Show Church</span>
+            </label>
+            {options.showChurch && (
+              <input
+                type="color"
+                value={options.churchColor}
+                onChange={(e) => setOptions({ ...options, churchColor: e.target.value })}
+                className="mt-1 border rounded"
+              />
+            )}
+          </div>
 
-          <label>
-            <input
-              type="checkbox"
-              checked={options.showChurch}
-              onChange={(e) => setOptions({ ...options, showChurch: e.target.checked })}
-              className="mr-2"
-            />
-            Show Church
-          </label>
-          {options.showChurch && (
-            <input
-              type="color"
-              value={options.churchColor}
-              onChange={(e) => setOptions({ ...options, churchColor: e.target.value })}
-              className="ml-4"
-            />
-          )}
-
-          <label>
-            <input
-              type="checkbox"
-              checked={options.showType}
-              onChange={(e) => setOptions({ ...options, showType: e.target.checked })}
-              className="mr-2"
-            />
-            Show Participant Type
-          </label>
-          {options.showType && (
-            <input
-              type="color"
-              value={options.typeColor}
-              onChange={(e) => setOptions({ ...options, typeColor: e.target.value })}
-              className="ml-4"
-            />
-          )}
+          <div>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={options.showType}
+                onChange={(e) => setOptions({ ...options, showType: e.target.checked })}
+              />
+              <span>Show Participant Type</span>
+            </label>
+            {options.showType && (
+              <input
+                type="color"
+                value={options.typeColor}
+                onChange={(e) => setOptions({ ...options, typeColor: e.target.value })}
+                className="mt-1 border rounded"
+              />
+            )}
+          </div>
         </div>
 
         {/* OTHER STYLES */}

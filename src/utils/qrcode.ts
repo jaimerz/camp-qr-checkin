@@ -34,7 +34,6 @@ export async function generateQRCodePDF(
     spacingY,
     badgeCornerRadius,
     qrSize,
-    showName,
     showChurch,
     showType,
     nameColor,
@@ -44,8 +43,8 @@ export async function generateQRCodePDF(
   } = options;
 
   // Badge size calculated to fit maximum full badges per page
-  const badgeWidth = 60; // Fixed size, could also be passed
-  const badgeHeight = 60;
+  const badgeWidth = qrSize + 2 * qrSize * 0.6;  // QR + text space top/bottom
+  const badgeHeight = qrSize + 3 * qrSize * 0.6; // QR + name + church + type
 
   const columns = Math.floor((pageWidth - 2 * marginX + spacingX) / (badgeWidth + spacingX));
   const rows = Math.floor((pageHeight - 2 * marginY + spacingY) / (badgeHeight + spacingY));
