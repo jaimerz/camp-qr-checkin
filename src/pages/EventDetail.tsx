@@ -32,6 +32,7 @@ const EventDetail: React.FC = () => {
   const [selectedActivityName, setSelectedActivityName] = useState<string | null>(null);
   
   const openParticipantsModal = (activityId: string, activityName: string) => {
+    console.log(`Opening modal for: ${activityName}`);
     setSelectedActivityParticipants(participantsByActivity[activityId] || []);
     setSelectedActivityName(activityName);
     setModalVisible(true);
