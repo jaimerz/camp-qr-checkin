@@ -16,12 +16,13 @@ import {
 import { generateQRCodePDF } from '../utils/qrcode';
 import { Event, Participant } from '../types';
 import { doc, updateDoc, getFirestore } from 'firebase/firestore';
+import DownloadQrModal from '../components/modals/DownloadQrModal';
+
 
   const ManageParticipants: React.FC = () => {
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [generatingQrCodes, setGeneratingQrCodes] = useState(false);
   const [name, setName] = useState('');
   const [church, setChurch] = useState('');
   const [type, setType] = useState<'student' | 'leader'>('student');
@@ -41,6 +42,7 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
   const leaderNames = Array.from(
     new Set(participants.filter(p => p.type === 'leader').map(p => p.name))
   );
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
   
   const TagInput: React.FC<{
     tags: string[];
@@ -170,25 +172,6 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
     setModalOpen(true);
   };
 
-  const handleGenerateQrCodes = async () => {
-    if (!participants.length) return;
-    setGeneratingQrCodes(true);
-    try {
-      const pdfBlob = await generateQRCodePDF(participants);
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `qr-codes.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Error generating QR codes:', error);
-    } finally {
-      setGeneratingQrCodes(false);
-    }
-  };
-
   const handleDelete = (participant: Participant) => {
     openConfirmModal(
       `Are you sure you want to delete ${participant.name}? This will also delete their activity logs.`,
@@ -271,12 +254,11 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
           </CardHeader>
           <CardContent className="space-x-4">
             <Button
-              onClick={handleGenerateQrCodes}
-              isLoading={generatingQrCodes}
+              onClick={() => setDownloadModalOpen(true)}
               disabled={!participants.length}
             >
               <Download className="h-4 w-4 mr-2" />
-              Generate QR Codes
+              Download QR Codes
             </Button>
           </CardContent>
         </Card>
@@ -512,6 +494,11 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
           </div>
         </form>
       </Modal>
+      <DownloadQrModal
+        isOpen={downloadModalOpen}
+        onClose={() => setDownloadModalOpen(false)}
+        participants={participants}
+      />
     </AuthGuard>
   );
 };
