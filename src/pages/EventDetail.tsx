@@ -27,6 +27,21 @@ const EventDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeTabId, setActiveTabId] = useState('overview');
   const location = useLocation();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedActivityParticipants, setSelectedActivityParticipants] = useState<Participant[]>([]);
+  const [selectedActivityName, setSelectedActivityName] = useState<string | null>(null);
+  
+  const openParticipantsModal = (activityId: string, activityName: string) => {
+    setSelectedActivityParticipants(participantsByActivity[activityId] || []);
+    setSelectedActivityName(activityName);
+    setModalVisible(true);
+  };
+
+  const closeParticipantsModal = () => {
+    setModalVisible(false);
+    setSelectedActivityParticipants([]);
+    setSelectedActivityName(null);
+  };
 
   useEffect(() => {
     if (loading) return;
@@ -326,9 +341,12 @@ const EventDetail: React.FC = () => {
                         </CardContent>
                         <CardFooter className="bg-gray-50 py-2 px-4">
                           <div className="flex justify-between items-center w-full">
-                            <span className="text-sm text-gray-500">
+                            <button
+                              onClick={() => openParticipantsModal(activity.id, activity.name)}
+                              className="text-sm text-teal-600 underline hover:text-teal-800"
+                            >
                               Participants: {participantsByActivity[activity.id]?.length || 0}
-                            </span>
+                            </button>
                           </div>
                         </CardFooter>
                       </Card>
@@ -372,6 +390,35 @@ const EventDetail: React.FC = () => {
           }}
         />
       </div>
+
+      {modalVisible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">
+              Participants in {selectedActivityName}
+            </h3>
+            {selectedActivityParticipants.length > 0 ? (
+              <ul className="space-y-2 max-h-80 overflow-y-auto">
+                {selectedActivityParticipants.map((participant) => (
+                  <li key={participant.id} className="border p-3 rounded-md">
+                    <p className="font-medium">{participant.name}</p>
+                    <p className="text-sm text-gray-500">{participant.church}</p>
+                    <Badge variant={participant.type === 'student' ? 'primary' : 'secondary'}>
+                      {participant.type}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500">No participants found.</p>
+            )}
+            <div className="mt-4 text-right">
+              <Button onClick={closeParticipantsModal}>Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </AuthGuard>
   );
 };
