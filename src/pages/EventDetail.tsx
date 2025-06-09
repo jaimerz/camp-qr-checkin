@@ -318,6 +318,13 @@ const EventDetail: React.FC = () => {
       label: 'Activities',
       content: (
         <div className="space-y-6">
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={fetchData}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Sync View
+            </Button>
+          </div>
+          
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>All Activities</CardTitle>              
