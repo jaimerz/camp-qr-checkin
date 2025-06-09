@@ -29,15 +29,20 @@ const EventDetail: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const hash = location.hash || '';
-    const query = hash.split('?')[1];
-    const params = new URLSearchParams(query);
-    const fromTab = params.get('fromTab');
+    const hash = location.hash; // e.g. "#/events/camp2025?fromTab=participants"
 
-    if (fromTab && activeTabId === 'overview') {
-      setActiveTabId(fromTab);
-      // Clean up the URL by removing the query
-      window.history.replaceState({}, '', window.location.pathname + location.hash.split('?')[0]);
+    if (hash.includes('?')) {
+      const [pathOnly, queryString] = hash.split('?');
+      const params = new URLSearchParams(queryString);
+      const fromTab = params.get('fromTab');
+
+      if (fromTab && activeTabId === 'overview') {
+        setActiveTabId(fromTab);
+
+        // Remove query params from the URL
+        const cleanedHash = pathOnly;
+        window.history.replaceState({}, '', window.location.pathname + cleanedHash);
+      }
     }
   }, [location]);
 
