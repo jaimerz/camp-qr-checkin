@@ -46,10 +46,14 @@ export async function generateQRCodePDF(
   const verticalPadding = qrSize * 0.25;
   const qrGap = qrSize * 0.2;
 
-  let textHeight = qrSize * 0.4; // name
-  if (options.showChurch) textHeight += qrSize * 0.3;
-  if (options.showType) textHeight += qrSize * 0.33;
-  textHeight += qrSize * 0.4; // line spacing buffer
+  let textHeight = 0;
+
+  textHeight += qrSize * 0.4; // Name (always shown)
+  if (options.showChurch) textHeight += qrSize * 0.3 + 1.5; // + line spacing
+  if (options.showType) textHeight += qrSize * 0.33 + 1.5;
+
+  const lineSpacing = 2;
+  textHeight += lineSpacing * (1 + Number(options.showChurch) + Number(options.showType));
 
   let badgeHeight = verticalPadding * 2 + qrSize + qrGap + textHeight;
   let badgeWidth = qrSize + qrSize * 0.6;

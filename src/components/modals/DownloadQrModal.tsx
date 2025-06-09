@@ -123,8 +123,6 @@ const DownloadQrModal: React.FC<Props> = ({ isOpen, onClose, participants }) => 
           >
             Reset to Defaults
           </Button>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleDownload}>Download PDF</Button>
         </div>
 
         <div className="flex justify-end space-x-2 mt-4">
