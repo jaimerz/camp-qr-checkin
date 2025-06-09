@@ -95,13 +95,13 @@ export async function generateQRCodePDF(
     doc.addImage(qrDataUrl, 'PNG', centerX - qrSize / 2, cursorY, qrSize, qrSize);
     
     // Name
-    cursorY += qrSize + qrSize * 0.15; // increase gap below QR
+    cursorY += qrSize + qrSize * 0.18;
 
     doc.setFontSize(qrSize * 0.4);
     doc.setTextColor(...hexToRgb(nameColor));
     doc.setFont(undefined, 'bold');
     doc.text(p.name, centerX, cursorY, { align: 'center' });
-    cursorY += qrSize * 0.2; // reduce gap before church
+    cursorY += qrSize * 0.26;
 
     // Church
     if (showChurch) {
