@@ -29,15 +29,17 @@ const EventDetail: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-  if (typeof window !== 'undefined') {
-    const hash = location.hash || '';
-    const queryString = hash.includes('?') ? hash.split('?')[1] : '';
-    const tabParam = new URLSearchParams(queryString).get('tab');
-    if (tabParam) {
-      setActiveTabId(tabParam);
+    if (typeof window !== 'undefined') {
+      const hash = location.hash || '';
+      const queryString = hash.includes('?') ? hash.split('?')[1] : '';
+      const tabParam = new URLSearchParams(queryString).get('tab');
+      
+      // Only set if default is still 'overview'
+      if (tabParam && activeTabId === 'overview') {
+        setActiveTabId(tabParam);
+      }
     }
-  }
-}, [location]);
+  }, [location.hash]);
 
   const fetchData = async () => {
     if (!eventId) return;
