@@ -391,7 +391,7 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
           <input
             disabled
             value={editParticipant?.name || ''}
-            className="w-full border p-2 bg-gray-100 rounded"
+            className="w-full border p-2 bg-gray-100 rounded mt-4"
           />
           <input
             disabled
@@ -481,7 +481,7 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Name"
-            className="w-full border p-2 rounded"
+            className="w-full border p-2 rounded mt-4"
             required
           />
           <input
