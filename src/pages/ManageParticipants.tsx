@@ -9,7 +9,6 @@ import Modal from '../components/ui/Modal';
 import {
   getEvents,
   getParticipantsByEvent,
-  resetTestData,
   createParticipant,
   deleteParticipantWithLogs,
   generateDeterministicQrCode,
@@ -23,7 +22,6 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingQrCodes, setGeneratingQrCodes] = useState(false);
-  const [resetting, setResetting] = useState(false);
   const [name, setName] = useState('');
   const [church, setChurch] = useState('');
   const [type, setType] = useState<'student' | 'leader'>('student');
@@ -191,20 +189,6 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
     }
   };
 
-  const handleResetTestData = async () => {
-    if (!activeEvent) return;
-    setResetting(true);
-    try {
-      await resetTestData(activeEvent.id);
-      const data = await getParticipantsByEvent(activeEvent.id);
-      setParticipants(data);
-    } catch (error) {
-      console.error('Error resetting test data:', error);
-    } finally {
-      setResetting(false);
-    }
-  };
-
   const handleDelete = (participant: Participant) => {
     openConfirmModal(
       `Are you sure you want to delete ${participant.name}? This will also delete their activity logs.`,
@@ -293,15 +277,6 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
             >
               <Download className="h-4 w-4 mr-2" />
               Generate QR Codes
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={handleResetTestData}
-              isLoading={resetting}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reset Test Data
             </Button>
           </CardContent>
         </Card>
