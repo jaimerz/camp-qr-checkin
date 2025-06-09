@@ -88,7 +88,7 @@ export async function generateQRCodePDF(
     doc.setFillColor(255, 255, 255);
     doc.roundedRect(x, y, badgeWidth, badgeHeight, badgeCornerRadius, badgeCornerRadius, 'FD');
 
-    let cursorY = y + 8;
+    let cursorY = y + qrSize * 0.15;
 
     // QR Code
     doc.addImage(qrDataUrl, 'PNG', centerX - qrSize / 2, cursorY, qrSize, qrSize);
