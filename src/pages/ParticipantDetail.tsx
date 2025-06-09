@@ -54,7 +54,7 @@ const ParticipantDetail: React.FC = () => {
       <div className="space-y-6">
         <button
           className="text-sm text-teal-600 flex items-center mb-4"
-          onClick={() => navigate(`#/events/${eventId}?fromTab=participants`)}
+          onClick={() => navigate(`/events/${eventId}?fromTab=participants`)}
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Participants
         </button>

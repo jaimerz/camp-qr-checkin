@@ -29,19 +29,17 @@ const EventDetail: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const hash = location.hash || '';
-      const queryStart = hash.indexOf('?');
-      if (queryStart !== -1) {
-        const queryString = hash.substring(queryStart + 1);
-        const fromTab = new URLSearchParams(queryString).get('fromTab');
+    const hash = location.hash || '';
+    const query = hash.split('?')[1];
+    const params = new URLSearchParams(query);
+    const fromTab = params.get('fromTab');
 
-        if (fromTab && activeTabId === 'overview') {
-          setActiveTabId(fromTab);
-        }
-      }
+    if (fromTab && activeTabId === 'overview') {
+      setActiveTabId(fromTab);
+      // Clean up the URL by removing the query
+      window.history.replaceState({}, '', window.location.pathname + location.hash.split('?')[0]);
     }
-  }, [location.hash]);
+  }, [location]);
 
   const fetchData = async () => {
     if (!eventId) return;
