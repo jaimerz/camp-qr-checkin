@@ -52,12 +52,12 @@ const ParticipantDetail: React.FC = () => {
   return (
     <AuthGuard>
       <div className="space-y-6">
-        <button
-          className="text-sm text-teal-600 flex items-center mb-4"
-          onClick={() => navigate(`/events/${eventId}?tab=participants`)}
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Participants
-        </button>
+        <Link to={`/events/${participant.eventId}?fromTab=participants`}>
+          <Button variant="ghost" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Participants
+          </Button>
+        </Link>
 
         <Card>
           <CardHeader>

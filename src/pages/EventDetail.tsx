@@ -31,12 +31,14 @@ const EventDetail: React.FC = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const hash = location.hash || '';
-      const queryString = hash.includes('?') ? hash.split('?')[1] : '';
-      const tabParam = new URLSearchParams(queryString).get('tab');
-      
-      // Only set if default is still 'overview'
-      if (tabParam && activeTabId === 'overview') {
-        setActiveTabId(tabParam);
+      const queryStart = hash.indexOf('?');
+      if (queryStart !== -1) {
+        const queryString = hash.substring(queryStart + 1);
+        const fromTab = new URLSearchParams(queryString).get('fromTab');
+
+        if (fromTab && activeTabId === 'overview') {
+          setActiveTabId(fromTab);
+        }
       }
     }
   }, [location.hash]);
