@@ -145,7 +145,7 @@ const ManageActivities: React.FC = () => {
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded mt-4"
               placeholder="Activity name"
             />
             <input

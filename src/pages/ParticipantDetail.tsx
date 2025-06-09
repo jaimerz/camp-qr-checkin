@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Clock, MapPin, User } from 'lucide-react';
-import { getParticipantActivityLogs, getParticipantById, getParticipantByQrCode } from '../utils/firebase';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Clock, User } from 'lucide-react';
+import { getParticipantActivityLogs, getParticipantByQrCode } from '../utils/firebase';
 import { ActivityLog, Participant } from '../types';
 import { formatDateTime } from '../utils/helpers';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
@@ -14,6 +14,7 @@ const ParticipantDetail: React.FC = () => {
   const [participant, setParticipant] = useState<Participant | null>(null);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,11 +52,12 @@ const ParticipantDetail: React.FC = () => {
   return (
     <AuthGuard>
       <div className="space-y-6">
-        <Link to={`/events/${eventId}`}>
-          <button className="text-sm text-teal-600 flex items-center mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Event
-          </button>
-        </Link>
+        <button
+          className="text-sm text-teal-600 flex items-center mb-4"
+          onClick={() => navigate(`/events/${eventId}?fromTab=participants`)}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Participants
+        </button>
 
         <Card>
           <CardHeader>

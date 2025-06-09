@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { Calendar, Users, MapPin, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -12,8 +12,7 @@ import {
   getActivitiesByEvent,
   getEventById,
   getParticipantsByActivityId,
-  getParticipantsAtCamp,
-  resetTestData
+  getParticipantsAtCamp
 } from '../utils/firebase';
 import { Participant, Activity, Event } from '../types';
 import { formatDate } from '../utils/helpers';
@@ -26,8 +25,39 @@ const EventDetail: React.FC = () => {
   const [participantsAtCamp, setParticipantsAtCamp] = useState<Participant[]>([]);
   const [participantsByActivity, setParticipantsByActivity] = useState<Record<string, Participant[]>>({});
   const [loading, setLoading] = useState(true);
-  const [resetting, setResetting] = useState(false);
   const [activeTabId, setActiveTabId] = useState('overview');
+  const location = useLocation();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedActivityParticipants, setSelectedActivityParticipants] = useState<Participant[]>([]);
+  const [selectedActivityName, setSelectedActivityName] = useState<string | null>(null);
+  
+  const openParticipantsModal = (activityId: string, activityName: string) => {
+    console.log(`Opening modal for: ${activityName}`);
+    setSelectedActivityParticipants(participantsByActivity[activityId] || []);
+    setSelectedActivityName(activityName);
+    setModalVisible(true);
+  };
+
+  const closeParticipantsModal = () => {
+    setModalVisible(false);
+    setSelectedActivityParticipants([]);
+    setSelectedActivityName(null);
+  };
+
+  useEffect(() => {
+    if (loading) return;
+
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('fromTab');
+
+    if (tabParam && activeTabId === 'overview') {
+      setActiveTabId(tabParam);
+
+      // Clean the URL without reloading
+      const cleanedUrl = `${window.location.origin}${window.location.pathname}${window.location.hash.split('?')[0]}`;
+      window.history.replaceState({}, '', cleanedUrl);
+    }
+  }, [location.search, loading]);
 
   const fetchData = async () => {
     if (!eventId) return;
@@ -64,7 +94,7 @@ const EventDetail: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };  
+  };
   
   useEffect(() => {
     fetchData();
@@ -85,22 +115,6 @@ const EventDetail: React.FC = () => {
       setParticipantsByActivity(byActivityData);
     } catch (error) {
       console.error('Error refreshing live data:', error);
-    }
-  };
-
-  const handleResetTestData = async () => {
-    if (!eventId) return;
-    
-    setResetting(true);
-    try {
-      await resetTestData(eventId);
-      
-      // Refresh data
-      await refreshLiveData();
-    } catch (error) {
-      console.error('Error resetting test data:', error);
-    } finally {
-      setResetting(false);
     }
   };
 
@@ -173,17 +187,6 @@ const EventDetail: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-          
-          <div className="flex space-x-4">
-            <Button 
-              variant="outline" 
-              onClick={handleResetTestData}
-              isLoading={resetting}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reset Test Data
-            </Button>
-          </div>
         </div>
       ),
     },
@@ -315,6 +318,13 @@ const EventDetail: React.FC = () => {
       label: 'Activities',
       content: (
         <div className="space-y-6">
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={fetchData}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Sync View
+            </Button>
+          </div>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>All Activities</CardTitle>              
@@ -323,12 +333,11 @@ const EventDetail: React.FC = () => {
               {activities.length > 0 ? (
                 <div className="space-y-4">
                   {activities.map((activity) => (
-                    <Link 
-                      key={activity.id}
-                      to={`/activities/${activity.id}`}
-                      className="block"
-                    >
-                      <Card className="hover:shadow-md transition-shadow">
+                    <Card key={activity.id} className="hover:shadow-md transition-shadow">
+                      <div
+                        onClick={() => openParticipantsModal(activity.id, activity.name)}
+                        className="cursor-pointer"
+                      >
                         <CardContent className="p-4">
                           <h3 className="font-medium text-lg">{activity.name}</h3>
                           <p className="text-gray-500 text-sm">{activity.description}</p>
@@ -339,13 +348,13 @@ const EventDetail: React.FC = () => {
                         </CardContent>
                         <CardFooter className="bg-gray-50 py-2 px-4">
                           <div className="flex justify-between items-center w-full">
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-teal-600 underline">
                               Participants: {participantsByActivity[activity.id]?.length || 0}
                             </span>
                           </div>
                         </CardFooter>
-                      </Card>
-                    </Link>
+                      </div>
+                    </Card>
                   ))}
                 </div>
               ) : (
@@ -377,12 +386,48 @@ const EventDetail: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
         </div>
         
-        <Tabs 
+        <Tabs
           tabs={tabs}
           activeTabId={activeTabId}
-          onTabChange={setActiveTabId}
+          onTabChange={(id) => {
+            setActiveTabId(id);
+          }}
         />
       </div>
+
+      {modalVisible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">
+              Participants in {selectedActivityName}
+            </h3>
+            {selectedActivityParticipants.length > 0 ? (
+              <ul className="space-y-2 max-h-80 overflow-y-auto">
+                {selectedActivityParticipants.map((participant) => (
+                  <li
+                    key={participant.id}
+                    className="border p-3 rounded-md flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-medium">{participant.name}</p>
+                      <p className="text-sm text-gray-500">{participant.church}</p>
+                    </div>
+                    <Badge variant={participant.type === 'student' ? 'primary' : 'secondary'}>
+                      {participant.type}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500">No participants found.</p>
+            )}
+            <div className="mt-4 text-right">
+              <Button onClick={closeParticipantsModal}>Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </AuthGuard>
   );
 };

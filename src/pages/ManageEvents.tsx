@@ -147,7 +147,7 @@ const ManageEvents: React.FC = () => {
 
         <Modal isOpen={!!editEvent} onClose={() => setEditEvent(null)} title="Edit Event">
           <div className="space-y-4">
-            <input value={editEvent?.name || ''} disabled className="w-full border p-2 bg-gray-100 rounded" />
+            <input value={editEvent?.name || ''} disabled className="w-full border p-2 bg-gray-100 rounded mt-4" />
             <input
               type="text"
               placeholder="Description"

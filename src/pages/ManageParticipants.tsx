@@ -9,7 +9,6 @@ import Modal from '../components/ui/Modal';
 import {
   getEvents,
   getParticipantsByEvent,
-  resetTestData,
   createParticipant,
   deleteParticipantWithLogs,
   generateDeterministicQrCode,
@@ -23,7 +22,6 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingQrCodes, setGeneratingQrCodes] = useState(false);
-  const [resetting, setResetting] = useState(false);
   const [name, setName] = useState('');
   const [church, setChurch] = useState('');
   const [type, setType] = useState<'student' | 'leader'>('student');
@@ -124,8 +122,8 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
                 className={`p-2 cursor-pointer text-sm ${
                   i === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-100'
                 }`}
-                onMouseDown={(e) => {
-                  e.preventDefault();
+                onPointerDown={(e) => {
+                  e.preventDefault(); // Prevent focus/blur
                   addTag(s);
                 }}
               >
@@ -188,20 +186,6 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
       console.error('Error generating QR codes:', error);
     } finally {
       setGeneratingQrCodes(false);
-    }
-  };
-
-  const handleResetTestData = async () => {
-    if (!activeEvent) return;
-    setResetting(true);
-    try {
-      await resetTestData(activeEvent.id);
-      const data = await getParticipantsByEvent(activeEvent.id);
-      setParticipants(data);
-    } catch (error) {
-      console.error('Error resetting test data:', error);
-    } finally {
-      setResetting(false);
     }
   };
 
@@ -293,15 +277,6 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
             >
               <Download className="h-4 w-4 mr-2" />
               Generate QR Codes
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={handleResetTestData}
-              isLoading={resetting}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reset Test Data
             </Button>
           </CardContent>
         </Card>
@@ -416,7 +391,7 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
           <input
             disabled
             value={editParticipant?.name || ''}
-            className="w-full border p-2 bg-gray-100 rounded"
+            className="w-full border p-2 bg-gray-100 rounded mt-4"
           />
           <input
             disabled
@@ -506,7 +481,7 @@ import { doc, updateDoc, getFirestore } from 'firebase/firestore';
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Name"
-            className="w-full border p-2 rounded"
+            className="w-full border p-2 rounded mt-4"
             required
           />
           <input
