@@ -15,13 +15,13 @@ import { generateQRCodeZip } from '../../utils/generateQRCodeZip';
 
   const DownloadQrModal: React.FC<Props> = ({ isOpen, onClose, participants }) => {
   const [options, setOptions] = useState<QRCodePDFOptions>(defaultQRCodePDFOptions);
-  const [tab, setTab] = useState<'pdf' | 'zip'>('pdf');
-  const [zipOptions, setZipOptions] = useState({
+  const defaultQRCodeZipOptions = {
     qrColor: '#000000',
     background: 'white' as 'white' | 'transparent',
     size: 300,
-  });
-
+  };
+  const [tab, setTab] = useState<'pdf' | 'zip'>('pdf');
+  const [zipOptions, setZipOptions] = useState(defaultQRCodeZipOptions);
 
   const handleDownload = async () => {
     try {
@@ -140,7 +140,7 @@ import { generateQRCodeZip } from '../../utils/generateQRCodeZip';
             </label>
           </div>
 
-          <div className="flex justify-end space-x-2 mt-4">
+          <div className="flex justify-start space-x-2 mt-4">
             <Button
               variant="outline"
               onClick={() => setOptions(defaultQRCodePDFOptions)}
@@ -192,6 +192,15 @@ import { generateQRCodeZip } from '../../utils/generateQRCodeZip';
               className="border p-1 rounded w-full"
             />
           </label>
+
+          <div className="flex justify-start space-x-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setZipOptions(defaultQRCodeZipOptions)}
+            >
+              Reset to Defaults
+            </Button>
+          </div>
 
           <div className="flex justify-end space-x-2 pt-4">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
