@@ -23,7 +23,8 @@
     "tailwind-merge": "^2.2.1",
     "date-fns": "^3.3.1",
     "uuid": "^9.0.1",
-    "file-saver": "^2.0.5"
+    "file-saver": "^2.0.5",
+    "jszip": "^3.10.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
