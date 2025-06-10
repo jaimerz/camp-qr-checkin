@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { getEvents, getParticipantsByEvent, getActivitiesByEvent, getParticipantsAtCamp, getParticipantsByActivityId } from '../utils/firebase';
-import { Event, Participant, Activity } from '../types';
-import AuthGuard from '../components/AuthGuard';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { getEvents, getParticipantsByEvent, getActivitiesByEvent, getParticipantsAtCamp, getParticipantsByActivityId } from './utils/firebase';
+import { Event, Participant, Activity } from './types';
+import AuthGuard from './components/AuthGuard';
+import { Card, CardHeader, CardTitle, CardContent } from './components/ui/Card';
+import LoadingSpinner from './components/LoadingSpinner';
 import { RefreshCw, MapPin, Users } from 'lucide-react';
-import Button from '../components/ui/Button';
+import Button from './components/ui/Button';
 
 const Reports: React.FC = () => {
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
