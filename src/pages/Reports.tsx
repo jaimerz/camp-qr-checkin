@@ -93,7 +93,7 @@ const Reports: React.FC = () => {
           <CardHeader>
             <CardTitle>Current Location Breakdown</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50">
               <div className="flex items-center">
                 <Users className="h-5 w-5 text-green-600 mr-2" />
