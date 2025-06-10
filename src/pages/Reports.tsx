@@ -1,11 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { getEvents, getParticipantsByEvent, getActivitiesByEvent, getParticipantsAtCamp, getParticipantsByActivityId, getParticipantActivityLogs } from '../utils/firebase';
+import {
+  getEvents,
+  getParticipantsByEvent,
+  getActivitiesByEvent,
+  getParticipantsAtCamp,
+  getParticipantsByActivityId,
+  getParticipantActivityLogs
+} from '../utils/firebase';
 import { Event, Participant, Activity } from '../types';
 import AuthGuard from '../components/AuthGuard';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { RefreshCw, MapPin, Users } from 'lucide-react';
 import Button from '../components/ui/Button';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid
+} from 'recharts';
 
 const Reports: React.FC = () => {
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
@@ -73,11 +89,22 @@ const Reports: React.FC = () => {
 
   const studentCount = participants.filter(p => p.type === 'student').length;
   const leaderCount = participants.filter(p => p.type === 'leader').length;
+
   const byChurch: Record<string, number> = {};
   participants.forEach(p => {
     if (!byChurch[p.church]) byChurch[p.church] = 0;
     byChurch[p.church]++;
   });
+
+  const engagementChartData = activities.map((a) => ({
+    name: a.name,
+    count: activityEngagement[a.id] || 0,
+  })).sort((a, b) => b.count - a.count);
+
+  const churchChartData = Object.entries(byChurch).map(([church, count]) => ({
+    name: church,
+    count,
+  })).sort((a, b) => b.count - a.count);
 
   return (
     <AuthGuard>
@@ -137,15 +164,16 @@ const Reports: React.FC = () => {
           <CardHeader>
             <CardTitle>Activity Engagement</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {activities.map((activity) => (
-              <div key={activity.id} className="bg-white p-3 rounded-md border border-gray-200">
-                <p className="font-medium text-gray-800">{activity.name}</p>
-                <p className="text-sm text-gray-500">
-                  {activityEngagement[activity.id] || 0} unique participants
-                </p>
-              </div>
-            ))}
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={engagementChartData} layout="vertical" margin={{ left: 30, right: 30 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" allowDecimals={false} />
+                <YAxis type="category" dataKey="name" width={140} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#0ea5e9" />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
@@ -153,13 +181,16 @@ const Reports: React.FC = () => {
           <CardHeader>
             <CardTitle>Participants by Church</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {Object.entries(byChurch).map(([church, count]) => (
-              <div key={church} className="bg-white p-3 rounded-md border border-gray-200">
-                <p className="font-medium text-gray-800">{church}</p>
-                <p className="text-sm text-gray-500">{count} participants</p>
-              </div>
-            ))}
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={churchChartData} layout="vertical" margin={{ left: 30, right: 30 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" allowDecimals={false} />
+                <YAxis type="category" dataKey="name" width={140} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#14b8a6" />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
