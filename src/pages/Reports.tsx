@@ -4,7 +4,7 @@ import { Event, Participant, Activity } from '../types';
 import AuthGuard from '../components/AuthGuard';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, MapPin, Users } from 'lucide-react';
 import Button from '../components/ui/Button';
 
 const Reports: React.FC = () => {
@@ -74,17 +74,17 @@ const Reports: React.FC = () => {
             <CardTitle>Summary</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded shadow">
+            <div className="bg-white p-4 rounded-lg border-l-4 border-purple-500 shadow">
               <h2 className="text-sm font-medium text-gray-500">Total Participants</h2>
-              <p className="text-2xl font-bold">{participants.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{participants.length}</p>
             </div>
-            <div className="bg-white p-4 rounded shadow">
+            <div className="bg-white p-4 rounded-lg border-l-4 border-teal-500 shadow">
               <h2 className="text-sm font-medium text-gray-500">Students</h2>
-              <p className="text-2xl font-bold">{studentCount}</p>
+              <p className="text-2xl font-bold text-gray-900">{studentCount}</p>
             </div>
-            <div className="bg-white p-4 rounded shadow">
+            <div className="bg-white p-4 rounded-lg border-l-4 border-amber-500 shadow">
               <h2 className="text-sm font-medium text-gray-500">Leaders</h2>
-              <p className="text-2xl font-bold">{leaderCount}</p>
+              <p className="text-2xl font-bold text-gray-900">{leaderCount}</p>
             </div>
           </CardContent>
         </Card>
@@ -93,12 +93,22 @@ const Reports: React.FC = () => {
           <CardHeader>
             <CardTitle>Current Location Breakdown</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-gray-700">At Camp: {participantsAtCamp.length}</p>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <div className="flex items-center mb-2">
+                <Users className="h-5 w-5 text-green-600 mr-2" />
+                <h4 className="font-medium text-green-800">At Camp</h4>
+              </div>
+              <p className="text-2xl font-bold text-green-900">{participantsAtCamp.length}</p>
+            </div>
             {activities.map((activity) => (
-              <p key={activity.id} className="text-gray-700">
-                {activity.name}: {participantsByActivity[activity.id]?.length || 0}
-              </p>
+              <div key={activity.id} className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center mb-2">
+                  <MapPin className="h-5 w-5 text-blue-600 mr-2" />
+                  <h4 className="font-medium text-blue-800">{activity.name}</h4>
+                </div>
+                <p className="text-2xl font-bold text-blue-900">{participantsByActivity[activity.id]?.length || 0}</p>
+              </div>
             ))}
           </CardContent>
         </Card>
@@ -109,7 +119,7 @@ const Reports: React.FC = () => {
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {Object.entries(byChurch).map(([church, count]) => (
-              <div key={church} className="bg-white p-3 rounded shadow">
+              <div key={church} className="bg-white p-3 rounded shadow border-l-4 border-teal-300">
                 <p className="font-medium text-gray-800">{church}</p>
                 <p className="text-sm text-gray-500">{count} participants</p>
               </div>
