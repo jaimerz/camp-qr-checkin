@@ -15,6 +15,7 @@ import ParticipantDetail from './pages/ParticipantDetail';
 import ManageParticipants from './pages/ManageParticipants';
 import ManageEvents from './pages/ManageEvents';
 import ManageActivities from './pages/ManageActivities';
+import Reports from './pages/Reports';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -34,6 +35,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/events/:eventId/participants/:qrCode" element={<ParticipantDetail />} />
           <Route path="/activities" element={<ManageActivities />} />
           <Route path="/participants" element={<ManageParticipants />} />
+          <Route path="/reports" element={<Reports />} />
         </Route>
       </Routes>
     </Router>
