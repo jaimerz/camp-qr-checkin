@@ -74,17 +74,17 @@ const Reports: React.FC = () => {
             <CardTitle>Summary</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-lg border-l-4 border-purple-500 shadow">
-              <h2 className="text-sm font-medium text-gray-500">Total Participants</h2>
-              <p className="text-2xl font-bold text-gray-900">{participants.length}</p>
+            <div className="bg-purple-50 p-4 rounded-lg">
+              <h2 className="text-sm font-medium text-purple-800">Total Participants</h2>
+              <p className="text-2xl font-bold text-purple-900">{participants.length}</p>
             </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-teal-500 shadow">
-              <h2 className="text-sm font-medium text-gray-500">Students</h2>
-              <p className="text-2xl font-bold text-gray-900">{studentCount}</p>
+            <div className="bg-teal-50 p-4 rounded-lg">
+              <h2 className="text-sm font-medium text-teal-800">Students</h2>
+              <p className="text-2xl font-bold text-teal-900">{studentCount}</p>
             </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-amber-500 shadow">
-              <h2 className="text-sm font-medium text-gray-500">Leaders</h2>
-              <p className="text-2xl font-bold text-gray-900">{leaderCount}</p>
+            <div className="bg-amber-50 p-4 rounded-lg">
+              <h2 className="text-sm font-medium text-amber-800">Leaders</h2>
+              <p className="text-2xl font-bold text-amber-900">{leaderCount}</p>
             </div>
           </CardContent>
         </Card>
@@ -93,21 +93,21 @@ const Reports: React.FC = () => {
           <CardHeader>
             <CardTitle>Current Location Breakdown</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <div className="flex items-center mb-2">
+          <CardContent className="space-y-4">
+            <div className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50">
+              <div className="flex items-center">
                 <Users className="h-5 w-5 text-green-600 mr-2" />
-                <h4 className="font-medium text-green-800">At Camp</h4>
+                <p className="font-medium text-gray-800">At Camp</p>
               </div>
-              <p className="text-2xl font-bold text-green-900">{participantsAtCamp.length}</p>
+              <span className="text-sm font-medium text-gray-600">{participantsAtCamp.length}</span>
             </div>
             {activities.map((activity) => (
-              <div key={activity.id} className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <div className="flex items-center mb-2">
+              <div key={activity.id} className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50">
+                <div className="flex items-center">
                   <MapPin className="h-5 w-5 text-blue-600 mr-2" />
-                  <h4 className="font-medium text-blue-800">{activity.name}</h4>
+                  <p className="font-medium text-gray-800">{activity.name}</p>
                 </div>
-                <p className="text-2xl font-bold text-blue-900">{participantsByActivity[activity.id]?.length || 0}</p>
+                <span className="text-sm font-medium text-gray-600">{participantsByActivity[activity.id]?.length || 0}</span>
               </div>
             ))}
           </CardContent>
@@ -119,7 +119,7 @@ const Reports: React.FC = () => {
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {Object.entries(byChurch).map(([church, count]) => (
-              <div key={church} className="bg-white p-3 rounded shadow border-l-4 border-teal-300">
+              <div key={church} className="bg-white p-3 rounded-md border border-gray-200">
                 <p className="font-medium text-gray-800">{church}</p>
                 <p className="text-sm text-gray-500">{count} participants</p>
               </div>
