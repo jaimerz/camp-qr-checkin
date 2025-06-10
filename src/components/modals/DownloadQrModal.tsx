@@ -34,7 +34,7 @@ import { generateQRCodeZip } from '../../utils/generateQRCodeZip';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Download QR Codes">
-      <div className="flex space-x-2 mb-4 border-b pb-2">
+      <div className="flex space-x-2 mt-4 mb-4 border-b pb-2">
         <button
           className={`px-4 py-1 rounded-t ${tab === 'pdf' ? 'bg-white border border-b-transparent' : 'bg-gray-100'}`}
           onClick={() => setTab('pdf')}
