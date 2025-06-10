@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getEvents, getParticipantsByEvent, getActivitiesByEvent, getParticipantsAtCamp, getParticipantsByActivityId } from '../utils/firebase';
+import { getEvents, getParticipantsByEvent, getActivitiesByEvent, getParticipantsAtCamp, getParticipantsByActivityId, getParticipantActivityLogs } from '../utils/firebase';
 import { Event, Participant, Activity } from '../types';
 import AuthGuard from '../components/AuthGuard';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
@@ -13,6 +13,7 @@ const Reports: React.FC = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [participantsAtCamp, setParticipantsAtCamp] = useState<Participant[]>([]);
   const [participantsByActivity, setParticipantsByActivity] = useState<Record<string, Participant[]>>({});
+  const [activityEngagement, setActivityEngagement] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
@@ -33,10 +34,29 @@ const Reports: React.FC = () => {
         byActivityData[activity.id] = list;
       }
 
+      const engagementMap: Record<string, Set<string>> = {};
+      for (const activity of activitiesData) {
+        engagementMap[activity.id] = new Set();
+      }
+
+      for (const participant of participantsData) {
+        const logs = await getParticipantActivityLogs(participant.id);
+        const latest = logs.find(log => log.type === 'change' || log.type === 'departure');
+        if (latest?.activityId && engagementMap[latest.activityId]) {
+          engagementMap[latest.activityId].add(participant.id);
+        }
+      }
+
+      const engagementCounts: Record<string, number> = {};
+      for (const activityId in engagementMap) {
+        engagementCounts[activityId] = engagementMap[activityId].size;
+      }
+
       setParticipants(participantsData);
       setActivities(activitiesData);
       setParticipantsAtCamp(atCampData);
       setParticipantsByActivity(byActivityData);
+      setActivityEngagement(engagementCounts);
     } catch (error) {
       console.error('Error fetching report data:', error);
     } finally {
@@ -108,6 +128,22 @@ const Reports: React.FC = () => {
                   <p className="font-medium text-gray-800">{activity.name}</p>
                 </div>
                 <span className="text-sm font-medium text-gray-600">{participantsByActivity[activity.id]?.length || 0}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Activity Engagement</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {activities.map((activity) => (
+              <div key={activity.id} className="bg-white p-3 rounded-md border border-gray-200">
+                <p className="font-medium text-gray-800">{activity.name}</p>
+                <p className="text-sm text-gray-500">
+                  {activityEngagement[activity.id] || 0} unique participants
+                </p>
               </div>
             ))}
           </CardContent>
