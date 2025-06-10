@@ -1,0 +1,15 @@
+export const defaultQRCodePDFOptions = {
+  pageSize: 'a4',
+  qrColor: '#000000',
+  showChurch: true,
+  showType: true,
+  nameColor: '#000000',
+  churchColor: '#666666',
+  typeColor: '#003366',
+  badgeCornerRadius: 3,
+  marginX: 10,
+  marginY: 10,
+  spacingX: 5,
+  spacingY: 5,
+  qrSize: 30,
+};
