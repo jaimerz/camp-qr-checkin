@@ -58,14 +58,12 @@ export const updateParticipantLocation = async (
   participantId: string,
   activityId: string | null
 ) => {
-  console.log('[updateParticipantLocation] Called with:', { eventId, participantId, activityId });
 
   try {
     const ref = doc(db, 'events', eventId, 'participants', participantId);
     await updateDoc(ref, {
       location: activityId || 'camp',
     });
-    console.log(`[updateParticipantLocation] Updated ${participantId} to location: ${activityId || 'camp'}`);
   } catch (error) {
     await addDoc(collection(db, 'debug_logs'), {
       message: 'Failed to update participant activity',
@@ -569,8 +567,6 @@ export async function getParticipantsByActivityId(eventId: string, activityId: s
     });
   });
 
-  console.log(`[getParticipantsByActivityId] Found ${participants.length} participants at activity: ${activityId} for event: ${eventId}`);
-
   return participants;
 }
 
@@ -591,8 +587,6 @@ export async function getParticipantsAtCamp(eventId: string) {
       createdAt: data.createdAt.toDate(),
     });
   });
-
-  console.log(`[getParticipantsAtCamp] Found ${participants.length} participants at camp for event: ${eventId}`);
 
   return participants;
 }
@@ -633,7 +627,6 @@ export async function deleteActivity(eventId: string, activityId: string) {
   const participantsSnapshot = await getDocs(participantsQuery);
 
   participantsSnapshot.forEach((docSnap) => {
-    console.log(`Resetting participant ${docSnap.id} to camp from activity ${activityId}`);
     batch.update(docSnap.ref, { location: 'camp' });
   });
 
@@ -641,8 +634,6 @@ export async function deleteActivity(eventId: string, activityId: string) {
   batch.delete(ref);
 
   await batch.commit();
-
-  console.log(`Activity ${activityId} deleted and affected participants reset to camp.`);
 }
 
 export async function updateActivity(activityId: string, updates: Partial<Activity>) {
