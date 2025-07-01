@@ -3,7 +3,7 @@ name: Deploy to Firebase Hosting
 on:
   push:
     branches:
-      - '**'  # Or your deploy branch
+      - '**'  # Trigger on all branches
 
 jobs:
   build_and_deploy:
