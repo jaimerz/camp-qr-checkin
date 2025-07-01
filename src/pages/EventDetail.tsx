@@ -16,7 +16,6 @@ import {
 } from '../utils/firebase';
 import { Participant, Activity, Event } from '../types';
 import { formatDate } from '../utils/helpers';
-import { getFirestore, collection, getDocs, doc, getDoc, writeBatch } from 'firebase/firestore';
 
 
 const EventDetail: React.FC = () => {
@@ -101,51 +100,7 @@ const EventDetail: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [eventId]);
-
-  useEffect(() => {
-  const runBackfill = async () => {
-    console.log('🔥 Starting temporary backfill...');
-
-    const db = getFirestore();
-    const logsSnapshot = await getDocs(collection(db, 'activityLogs'));
-    const batch = writeBatch(db);
-    let count = 0;
-
-    for (const docSnap of logsSnapshot.docs) {
-      const logData = docSnap.data();
-
-      if (!logData.eventId && logData.participantId) {
-        let found = false;
-        const eventsSnap = await getDocs(collection(db, 'events'));
-
-        for (const eventDoc of eventsSnap.docs) {
-          const participantRef = doc(db, `events/${eventDoc.id}/participants/${logData.participantId}`);
-          const participantSnap = await getDoc(participantRef);
-
-          if (participantSnap.exists()) {
-            batch.update(docSnap.ref, { eventId: eventDoc.id });
-            found = true;
-            count++;
-            break;
-          }
-        }
-
-        if (!found) console.warn(`⚠️ Participant ${logData.participantId} not found in any event.`);
-      }
-    }
-
-    if (count > 0) {
-      await batch.commit();
-      console.log(`✅ Backfill completed: ${count} logs updated with eventId.`);
-    } else {
-      console.log('ℹ️ No logs required updating.');
-    }
-  };
-
-  runBackfill();
-}, []);
-
-
+  
   const refreshLiveData = async () => {
     if (!eventId) return;
 
