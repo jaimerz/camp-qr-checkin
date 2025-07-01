@@ -86,6 +86,7 @@ const EventDetail: React.FC = () => {
         const activityParticipants = await getParticipantsByActivityId(eventId!, activity.id);
         byActivityData[activity.id] = activityParticipants;
       }
+      console.log('[fetchData] Participants by activity mapping:', byActivityData);
       setParticipantsByActivity(byActivityData);
 
       const eventData = await getEventById(eventId);
