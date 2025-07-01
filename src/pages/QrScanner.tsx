@@ -71,6 +71,7 @@ const QrScannerPage: React.FC = () => {
   
           // ✅ Log a CHANGE
           await createActivityLog({
+            eventId,
             participantId,
             activityId,
             fromActivityId: currentActivity.id,
@@ -80,6 +81,7 @@ const QrScannerPage: React.FC = () => {
         } else {
           // ✅ Log a DEPARTURE
           await createActivityLog({
+            eventId,
             participantId,
             activityId,
             leaderId,
@@ -99,6 +101,7 @@ const QrScannerPage: React.FC = () => {
         }
   
         await createActivityLog({
+          eventId,
           participantId,
           activityId: currentActivity.id,
           leaderId,
