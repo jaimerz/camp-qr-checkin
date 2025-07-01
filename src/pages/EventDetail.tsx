@@ -18,6 +18,7 @@ import {
 import { Participant, Activity, Event } from '../types';
 import { formatDate } from '../utils/helpers';
 
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { updateParticipantLocation, getParticipantCurrentActivity } from '../utils/firebase';
 
 
