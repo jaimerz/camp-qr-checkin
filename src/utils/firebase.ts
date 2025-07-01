@@ -581,6 +581,24 @@ export async function getParticipantsByActivityId(eventId: string, activityId: s
   return participants;
 }
 
+export async function listAllParticipantLocations(eventId: string) {
+  const participantsSnapshot = await getDocs(collection(db, 'events', eventId, 'participants'));
+
+  const locations: Record<string, number> = {};
+
+  participantsSnapshot.forEach((doc) => {
+    const data = doc.data() as { location: string };
+    const location = data.location || 'camp';
+
+    if (!locations[location]) {
+      locations[location] = 0;
+    }
+    locations[location]++;
+  });
+
+  console.log('📍 Distinct participant locations and counts:', locations);
+}
+
 export async function getParticipantsAtCamp(eventId: string) {
   console.log(`[getParticipantsAtCamp] Querying participants at camp for event: ${eventId}`);
 

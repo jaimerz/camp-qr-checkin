@@ -12,7 +12,8 @@ import {
   getActivitiesByEvent,
   getEventById,
   getParticipantsByActivityId,
-  getParticipantsAtCamp
+  getParticipantsAtCamp,
+  listAllParticipantLocations
 } from '../utils/firebase';
 import { Participant, Activity, Event } from '../types';
 import { formatDate } from '../utils/helpers';
@@ -71,6 +72,9 @@ const EventDetail: React.FC = () => {
       // Fetch participants
       const participantsData = await getParticipantsByEvent(eventId);
       setParticipants(participantsData);
+
+      // 🔥 Add this line to inspect locations
+      await listAllParticipantLocations(eventId);
 
       // Fetch activities
       const activitiesData = await getActivitiesByEvent(eventId);
