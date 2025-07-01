@@ -108,54 +108,64 @@ const EventDetail: React.FC = () => {
       console.log('🔥 Starting location backfill...');
 
       const db = getFirestore();
-      const eventsSnapshot = await getDocs(collection(db, 'events'));
+      const eventId = 'camp2025'; // 🔒 Hardcode to limit scope
+      console.log(`➡️ Processing event: ${eventId}`);
 
-      for (const eventDoc of eventsSnapshot.docs) {
-        const eventId = eventDoc.id;
-        console.log(`➡️ Processing event: ${eventId}`);
+      const participantsSnapshot = await getDocs(collection(db, `events/${eventId}/participants`));
+      const batch = writeBatch(db);
+      let updatedCount = 0;
 
-        const participantsSnapshot = await getDocs(collection(db, `events/${eventId}/participants`));
-        const batch = writeBatch(db);
+      for (const participantDoc of participantsSnapshot.docs) {
+        const participantId = participantDoc.id;
 
-        for (const participantDoc of participantsSnapshot.docs) {
-          const participantId = participantDoc.id;
+        const logsQuery = query(
+          collection(db, 'activityLogs'),
+          where('participantId', '==', participantId)
+          // 🔥 Removed eventId filter as you validated that all participants belong to the same event
+        );
 
-          const logsQuery = query(
-            collection(db, 'activityLogs'),
-            where('participantId', '==', participantId),
-            where('eventId', '==', eventId)
-          );
+        const logsSnapshot = await getDocs(logsQuery);
 
-          const logsSnapshot = await getDocs(logsQuery);
-          const logs = logsSnapshot.docs.map((logDoc) => {
-            const data = logDoc.data() as { timestamp: Timestamp };
-            return {
-              ...data,
-              timestamp: data.timestamp.toDate(),
-            };
-          });
+        const logs = logsSnapshot.docs.map((logDoc) => {
+          const data = logDoc.data() as { timestamp: Timestamp };
+          return {
+            ...data,
+            timestamp: data.timestamp.toDate(),
+          };
+        });
 
-          if (logs.length === 0) {
-            console.log(`👀 No logs for participant ${participantId}, setting location to camp`);
-            batch.update(doc(db, `events/${eventId}/participants/${participantId}`), { location: 'camp' });
-            continue;
-          }
-
-          logs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-          const latestLog = logs[0];
-
-          const location = (latestLog.type === 'return') ? 'camp' : latestLog.activityId;
-
-          console.log(`✅ Updating participant ${participantId} to location: ${location}`);
-
-          batch.update(doc(db, `events/${eventId}/participants/${participantId}`), { location });
+        if (logs.length === 0) {
+          console.log(`👀 No logs for participant ${participantId}, setting location to camp`);
+          batch.update(doc(db, `events/${eventId}/participants/${participantId}`), { location: 'camp' });
+          continue;
         }
 
-        await batch.commit();
-        console.log(`✅ Finished event: ${eventId}`);
+        logs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        const latestLog = logs[0];
+
+        let location = 'camp';
+
+        if (latestLog.type === 'departure' || latestLog.type === 'change') {
+          location = latestLog.activityId;
+          console.log(`✅ Participant ${participantId} is at activity ${location}`);
+        } else if (latestLog.type === 'return') {
+          console.log(`✅ Participant ${participantId} is at camp (based on return log)`);
+        } else {
+          console.warn(`⚠️ Unexpected log type for participant ${participantId}: ${latestLog.type}`);
+        }
+
+        batch.update(doc(db, `events/${eventId}/participants/${participantId}`), { location });
+        updatedCount++;
       }
 
-      console.log('🎉 Location backfill complete.');
+      if (updatedCount > 0) {
+        await batch.commit();
+        console.log(`🎯 Backfill completed: ${updatedCount} participants updated.`);
+      } else {
+        console.log('ℹ️ No participants required updating.');
+      }
+
+      console.log('🎉 Location backfill fully complete.');
     };
 
     runLocationBackfill();
