@@ -12,16 +12,10 @@ import {
   getActivitiesByEvent,
   getEventById,
   getParticipantsByActivityId,
-  getParticipantsAtCamp,
-  listAllParticipantLocations
+  getParticipantsAtCamp
 } from '../utils/firebase';
 import { Participant, Activity, Event } from '../types';
 import { formatDate } from '../utils/helpers';
-
-import { getDocs, collection, query, where, updateDoc } from 'firebase/firestore';
-import { db } from '../utils/firebase';
-import { updateParticipantLocation, getParticipantCurrentActivity } from '../utils/firebase';
-
 
 
 const EventDetail: React.FC = () => {
@@ -78,9 +72,6 @@ const EventDetail: React.FC = () => {
       const participantsData = await getParticipantsByEvent(eventId);
       setParticipants(participantsData);
 
-      // 🔥 Add this line to inspect locations
-      await listAllParticipantLocations(eventId);
-
       // Fetch activities
       const activitiesData = await getActivitiesByEvent(eventId);
       setActivities(activitiesData);
@@ -107,67 +98,9 @@ const EventDetail: React.FC = () => {
     }
   };
   
-  //useEffect(() => {
-  //  fetchData();
-  //}, [eventId]);
-
   useEffect(() => {
-    const runAll = async () => {
-      await fetchData();
-      await backfillParticipantLocations();
-      await fetchData(); // 🔄 Re-fetch after backfill to verify instantly
-    };
-
-    runAll();
+    fetchData();
   }, [eventId]);
-
-  const backfillParticipantLocations = async () => {
-    if (!eventId) return;
-
-    console.log('🔥 Starting location backfill...');
-
-    // Fetch all participants
-    const allParticipants = await getParticipantsByEvent(eventId);
-
-    for (const participant of allParticipants) {
-      const logsQuery = query(
-        collection(db, 'activityLogs'),
-        where('participantId', '==', participant.id)
-      );
-
-      const logsSnapshot = await getDocs(logsQuery);
-
-      if (logsSnapshot.empty) {
-        console.log(`👀 No logs for participant ${participant.id}, setting location to camp`);
-        await updateParticipantLocation(eventId, participant.id, null);
-        continue;
-      }
-
-      // Find the most recent log
-      let latestLog: ActivityLog | null = null;
-
-      logsSnapshot.forEach((doc) => {
-        const data = doc.data() as Omit<ActivityLog, 'timestamp'> & { timestamp: Timestamp };
-        const log: ActivityLog = { ...data, timestamp: data.timestamp.toDate() };
-
-        if (!latestLog || log.timestamp > latestLog.timestamp) {
-          latestLog = log;
-        }
-      });
-
-      if (latestLog) {
-        if (latestLog.type === 'return') {
-          console.log(`✅ Participant ${participant.id} last returned to camp`);
-          await updateParticipantLocation(eventId, participant.id, null);
-        } else {
-          console.log(`✅ Participant ${participant.id} is at activity ${latestLog.activityId}`);
-          await updateParticipantLocation(eventId, participant.id, latestLog.activityId || null);
-        }
-      }
-    }
-
-    console.log('🎉 Location backfill complete.');
-  };
   
   const refreshLiveData = async () => {
     if (!eventId) return;

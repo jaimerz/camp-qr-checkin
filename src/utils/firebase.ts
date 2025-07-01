@@ -29,7 +29,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-export { db };
 
 // Participant related functions
 
@@ -582,6 +581,7 @@ export async function getParticipantsByActivityId(eventId: string, activityId: s
   return participants;
 }
 
+// For debuging, could be removed
 export async function listAllParticipantLocations(eventId: string) {
   const participantsSnapshot = await getDocs(collection(db, 'events', eventId, 'participants'));
 
