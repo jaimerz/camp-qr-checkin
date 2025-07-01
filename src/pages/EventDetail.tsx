@@ -17,6 +17,8 @@ import {
 import { Participant, Activity, Event } from '../types';
 import { formatDate } from '../utils/helpers';
 
+import { getFirestore, collection, getDocs, doc, getDoc, writeBatch, query, where, Timestamp } from 'firebase/firestore';
+
 
 const EventDetail: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -100,6 +102,64 @@ const EventDetail: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [eventId]);
+
+  useEffect(() => {
+    const runLocationBackfill = async () => {
+      console.log('🔥 Starting location backfill...');
+
+      const db = getFirestore();
+      const eventsSnapshot = await getDocs(collection(db, 'events'));
+
+      for (const eventDoc of eventsSnapshot.docs) {
+        const eventId = eventDoc.id;
+        console.log(`➡️ Processing event: ${eventId}`);
+
+        const participantsSnapshot = await getDocs(collection(db, `events/${eventId}/participants`));
+        const batch = writeBatch(db);
+
+        for (const participantDoc of participantsSnapshot.docs) {
+          const participantId = participantDoc.id;
+
+          const logsQuery = query(
+            collection(db, 'activityLogs'),
+            where('participantId', '==', participantId),
+            where('eventId', '==', eventId)
+          );
+
+          const logsSnapshot = await getDocs(logsQuery);
+          const logs = logsSnapshot.docs.map((logDoc) => {
+            const data = logDoc.data() as { timestamp: Timestamp };
+            return {
+              ...data,
+              timestamp: data.timestamp.toDate(),
+            };
+          });
+
+          if (logs.length === 0) {
+            console.log(`👀 No logs for participant ${participantId}, setting location to camp`);
+            batch.update(doc(db, `events/${eventId}/participants/${participantId}`), { location: 'camp' });
+            continue;
+          }
+
+          logs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+          const latestLog = logs[0];
+
+          const location = (latestLog.type === 'return') ? 'camp' : latestLog.activityId;
+
+          console.log(`✅ Updating participant ${participantId} to location: ${location}`);
+
+          batch.update(doc(db, `events/${eventId}/participants/${participantId}`), { location });
+        }
+
+        await batch.commit();
+        console.log(`✅ Finished event: ${eventId}`);
+      }
+
+      console.log('🎉 Location backfill complete.');
+    };
+
+    runLocationBackfill();
+  }, []);
   
   const refreshLiveData = async () => {
     if (!eventId) return;
