@@ -4,7 +4,7 @@ import { auth } from '../utils/firebase';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import { useNavigate, Link } from 'react-router-dom';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
 
 const ResetPassword: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -22,7 +22,7 @@ const ResetPassword: React.FC = () => {
     try {
       await sendPasswordResetEmail(auth, email);
       setMessage('Password reset email sent! Please check your inbox.');
-      setTimeout(() => navigate('/login'), 3000); // Optional: Redirect after 3s
+      setTimeout(() => navigate('/login'), 3000);
     } catch (err: any) {
       setError('Failed to send password reset email. Please try again.');
     } finally {
@@ -55,8 +55,13 @@ const ResetPassword: React.FC = () => {
           )}
 
           {message && (
-            <div className="mb-4 bg-green-50 p-4 rounded-md">
-              <p className="text-sm text-green-700">{message}</p>
+            <div className="mb-4 bg-teal-50 p-4 rounded-md flex">
+              <div className="flex-shrink-0">
+                <CheckCircle className="h-5 w-5 text-teal-500" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-teal-700">{message}</p>
+              </div>
             </div>
           )}
 
