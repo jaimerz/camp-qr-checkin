@@ -64,29 +64,39 @@ const EventDetail: React.FC = () => {
 
     setLoading(true);
     try {
-      // Fetch event details
-      // For simplicity, we'll fetch from the participants and activities
-        
       // Fetch participants
       const participantsData = await getParticipantsByEvent(eventId);
+      participantsData.sort((a, b) => a.name.localeCompare(b.name));
       setParticipants(participantsData);
 
       // Fetch activities
       const activitiesData = await getActivitiesByEvent(eventId);
-      setActivities(activitiesData);
-
-      // Fetch participants at camp
-      const atCampData = await getParticipantsAtCamp(eventId);
-      setParticipantsAtCamp(atCampData);
 
       // Fetch participants by activity
       const byActivityData: Record<string, Participant[]> = {};
       for (const activity of activitiesData) {
         const activityParticipants = await getParticipantsByActivityId(eventId!, activity.id);
+        activityParticipants.sort((a, b) => a.name.localeCompare(b.name));
         byActivityData[activity.id] = activityParticipants;
       }
       setParticipantsByActivity(byActivityData);
 
+      // ✅ Now sort activities using the fully built byActivityData
+      activitiesData.sort((a, b) => {
+        const countA = byActivityData[a.id]?.length || 0;
+        const countB = byActivityData[b.id]?.length || 0;
+
+        if (countA !== countB) return countB - countA;
+        return a.name.localeCompare(b.name);
+      });
+      setActivities(activitiesData);
+
+      // Fetch participants at camp
+      const atCampData = await getParticipantsAtCamp(eventId);
+      atCampData.sort((a, b) => a.name.localeCompare(b.name));
+      setParticipantsAtCamp(atCampData);
+
+      // Fetch event details
       const eventData = await getEventById(eventId);
       setEvent(eventData);
     } catch (error) {
@@ -105,11 +115,13 @@ const EventDetail: React.FC = () => {
 
     try {
       const atCampData = await getParticipantsAtCamp(eventId);
+      atCampData.sort((a, b) => a.name.localeCompare(b.name));
       setParticipantsAtCamp(atCampData);
-    
+
       const byActivityData: Record<string, Participant[]> = {};
       for (const activity of activities) {
         const activityParticipants = await getParticipantsByActivityId(eventId!, activity.id);
+        activityParticipants.sort((a, b) => a.name.localeCompare(b.name));
         byActivityData[activity.id] = activityParticipants;
       }
       setParticipantsByActivity(byActivityData);
