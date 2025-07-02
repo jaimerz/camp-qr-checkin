@@ -33,7 +33,6 @@ const EventDetail: React.FC = () => {
   const [selectedActivityName, setSelectedActivityName] = useState<string | null>(null);
   
   const openParticipantsModal = (activityId: string, activityName: string) => {
-    console.log(`Opening modal for: ${activityName}`);
     setSelectedActivityParticipants(participantsByActivity[activityId] || []);
     setSelectedActivityName(activityName);
     setModalVisible(true);
@@ -86,7 +85,6 @@ const EventDetail: React.FC = () => {
         const activityParticipants = await getParticipantsByActivityId(eventId!, activity.id);
         byActivityData[activity.id] = activityParticipants;
       }
-      console.log('[fetchData] Participants by activity mapping:', byActivityData);
       setParticipantsByActivity(byActivityData);
 
       const eventData = await getEventById(eventId);
