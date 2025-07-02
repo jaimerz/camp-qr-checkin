@@ -441,6 +441,7 @@ import DownloadQrModal from '../components/modals/DownloadQrModal';
                 type,
                 assignedLeaders: assignedLeaders,
                 qrCode,
+                location : 'camp',
               };
               await createParticipant(newParticipant);
               const updatedList = await getParticipantsByEvent(activeEvent.id);

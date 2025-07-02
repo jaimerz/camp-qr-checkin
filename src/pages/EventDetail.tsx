@@ -12,8 +12,7 @@ import {
   getActivitiesByEvent,
   getEventById,
   getParticipantsByActivityId,
-  getParticipantsAtCamp,
-  backfillParticipantLocations
+  getParticipantsAtCamp
 } from '../utils/firebase';
 import { Participant, Activity, Event } from '../types';
 import { formatDate } from '../utils/helpers';
@@ -98,8 +97,6 @@ const EventDetail: React.FC = () => {
   };
   
   useEffect(() => {
-    fetchData();
-    backfillParticipantLocations(eventId);
     fetchData();
   }, [eventId]);
   

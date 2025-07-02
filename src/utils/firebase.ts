@@ -273,6 +273,7 @@ export async function createParticipant(participant: Omit<Participant, 'id' | 'c
     id: participantRef.id,
     qrCode: generateDeterministicQrCode(participant.eventId, participant.name, participant.church),
     createdAt: new Date(),
+    location: 'camp', // ✅ Add this line to default location
   };
 
   await setDoc(participantRef, newParticipant);

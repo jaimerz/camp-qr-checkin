@@ -32,6 +32,7 @@ const ParticipantImport: React.FC = () => {
             await createParticipant({
               ...participant,
               eventId,
+              location : 'camp',
             });
             successCount++;
           } catch (err) {

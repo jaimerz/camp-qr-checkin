@@ -30,6 +30,7 @@ export interface Participant {
   eventId: string;
   qrCode: string;
   createdAt: Date;
+  location: string;
 }
 
 export interface Activity {
