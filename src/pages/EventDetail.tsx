@@ -17,6 +17,7 @@ import {
 import { Participant, Activity, Event } from '../types';
 import { formatDate } from '../utils/helpers';
 
+
 const EventDetail: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const [event, setEvent] = useState<Event | null>(null);
@@ -32,7 +33,6 @@ const EventDetail: React.FC = () => {
   const [selectedActivityName, setSelectedActivityName] = useState<string | null>(null);
   
   const openParticipantsModal = (activityId: string, activityName: string) => {
-    console.log(`Opening modal for: ${activityName}`);
     setSelectedActivityParticipants(participantsByActivity[activityId] || []);
     setSelectedActivityName(activityName);
     setModalVisible(true);
@@ -99,7 +99,7 @@ const EventDetail: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [eventId]);
-
+  
   const refreshLiveData = async () => {
     if (!eventId) return;
 

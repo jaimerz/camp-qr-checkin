@@ -1,9 +1,9 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { getFirestore,
+import { 
+  getFirestore,
   collection,
   doc,
-  db, // assuming db initialized
   setDoc,
   getDoc,
   getDocs,
@@ -14,7 +14,8 @@ import { getFirestore,
   Timestamp,
   writeBatch,
   addDoc,
-  serverTimestamp } from 'firebase/firestore';
+  serverTimestamp 
+} from 'firebase/firestore';
 import { User, UserRole, Participant, Activity, ActivityLog, Event } from '../types';
 
 const firebaseConfig = {
@@ -58,12 +59,11 @@ export const updateParticipantLocation = async (
   participantId: string,
   activityId: string | null
 ) => {
-  console.log('[updateParticipantLocation] Called with:', { eventId, participantId, activityId });
 
   try {
     const ref = doc(db, 'events', eventId, 'participants', participantId);
     await updateDoc(ref, {
-      currentActivityId: activityId,
+      location: activityId || 'camp',
     });
   } catch (error) {
     await addDoc(collection(db, 'debug_logs'), {
@@ -273,6 +273,7 @@ export async function createParticipant(participant: Omit<Participant, 'id' | 'c
     id: participantRef.id,
     qrCode: generateDeterministicQrCode(participant.eventId, participant.name, participant.church),
     createdAt: new Date(),
+    location: 'camp', // ✅ Add this line to default location
   };
 
   await setDoc(participantRef, newParticipant);
@@ -400,12 +401,14 @@ export async function getActivitiesByEvent(eventId: string) {
 // Activity log related functions
 
 export const createActivityLog = async ({
+  eventId,
   participantId,
   activityId,
   fromActivityId,
   leaderId,
   type,
 }: {
+  eventId: string;
   participantId: string;
   activityId: string;
   fromActivityId?: string;
@@ -413,6 +416,7 @@ export const createActivityLog = async ({
   type: 'departure' | 'return' | 'change';
 }) => {
   const logData: any = {
+    eventId,
     participantId,
     activityId,
     leaderId,
@@ -424,7 +428,7 @@ export const createActivityLog = async ({
     logData.fromActivityId = fromActivityId;
   }
 
-  await addDoc(collection(db, 'activityLogs'), logData);
+  await addDoc(collection(db, 'activityLogs'), { ...logData });
 };
 
 export async function getParticipantCurrentActivity(participantId: string) {
@@ -548,64 +552,63 @@ export async function getParticipantsByChurch(church: string, eventId: string) {
 }
 
 export async function getParticipantsByActivityId(eventId: string, activityId: string) {
-  const participants = await getParticipantsByEvent(eventId);
-  const matchingParticipants: Participant[] = [];
+  
+  const participantsQuery = query(
+    collection(db, 'events', eventId, 'participants'),
+    where('location', '==', activityId)
+  );
 
-  for (const participant of participants) {
-    const logsQuery = query(
-      collection(db, 'activityLogs'),
-      where('participantId', '==', participant.id)
-    );
-    const logsSnapshot = await getDocs(logsQuery);
+  const participantsSnapshot = await getDocs(participantsQuery);
+  const participants: Participant[] = [];
 
-    const logs: ActivityLog[] = logsSnapshot.docs.map((doc) => {
-      const raw = doc.data() as Omit<ActivityLog, 'timestamp'> & {
-        timestamp: Timestamp;
-      };
-      return {
-        ...raw,
-        timestamp: raw.timestamp.toDate(),
-      };
+  participantsSnapshot.forEach((doc) => {
+    const data = doc.data() as Omit<Participant, 'createdAt'> & { createdAt: Timestamp };
+    participants.push({
+      id: doc.id,
+      ...data,
+      createdAt: data.createdAt.toDate(),
     });
+  });
 
-    if (logs.length === 0) continue;
+  return participants;
+}
 
-    // Sort by timestamp DESC
-    logs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+// For debuging, could be removed
+export async function listAllParticipantLocations(eventId: string) {
+  const participantsSnapshot = await getDocs(collection(db, 'events', eventId, 'participants'));
 
-    const latest = logs[0];
+  const locations: Record<string, number> = {};
 
-    // If latest is departure or change and destination is this activity
-    if (
-      (latest.type === 'departure' || latest.type === 'change') &&
-      latest.activityId === activityId
-    ) {
-      matchingParticipants.push(participant);
+  participantsSnapshot.forEach((doc) => {
+    const data = doc.data() as { location: string };
+    const location = data.location || 'camp';
+
+    if (!locations[location]) {
+      locations[location] = 0;
     }
-  }
-
-  return matchingParticipants;
+    locations[location]++;
+  });
 }
 
 export async function getParticipantsAtCamp(eventId: string) {
-  // Get all participants for the event
-  const allParticipants = await getParticipantsByEvent(eventId);
-  
-  // Filter out participants who are currently at an activity
-  const participantsAtActivity: string[] = [];
-  
-  for (const participant of allParticipants) {
-    const currentActivity = await getParticipantCurrentActivity(participant.id);
-    
-    if (currentActivity) {
-      participantsAtActivity.push(participant.id);
-    }
-  }
-  
-  // Return participants who are at camp
-  return allParticipants.filter(
-    (participant) => !participantsAtActivity.includes(participant.id)
+  const participantsQuery = query(
+    collection(db, 'events', eventId, 'participants'),
+    where('location', '==', 'camp')
   );
+
+  const participantsSnapshot = await getDocs(participantsQuery);
+  const participants: Participant[] = [];
+
+  participantsSnapshot.forEach((doc) => {
+    const data = doc.data() as Omit<Participant, 'createdAt'> & { createdAt: Timestamp };
+    participants.push({
+      id: doc.id,
+      ...data,
+      createdAt: data.createdAt.toDate(),
+    });
+  });
+
+  return participants;
 }
 
 export async function resetTestData(eventId: string) {
@@ -626,8 +629,57 @@ export async function resetTestData(eventId: string) {
   }
 }
 
-export async function deleteActivity(_eventId: string, activityId: string) {
-  // Delete logs with this activityId
+// Utility to backfill participant locations based on latest activity logs
+export const backfillParticipantLocations = async (eventId: string) => {
+  if (!eventId) return;
+
+  console.log('🔥 Starting location backfill...');
+
+  // Get all participants for the event
+  const allParticipants = await getParticipantsByEvent(eventId);
+
+  for (const participant of allParticipants) {
+    const logsQuery = query(
+      collection(db, 'activityLogs'),
+      where('participantId', '==', participant.id)
+    );
+
+    const logsSnapshot = await getDocs(logsQuery);
+
+    // If no logs, set location to camp
+    if (logsSnapshot.empty) {
+      console.log(`👀 No logs for participant ${participant.id}, setting location to camp`);
+      await updateParticipantLocation(eventId, participant.id, null);
+      continue;
+    }
+
+    // Find the most recent log
+    let latestLog: ActivityLog | null = null;
+
+    logsSnapshot.forEach((doc) => {
+      const data = doc.data() as Omit<ActivityLog, 'timestamp'> & { timestamp: Timestamp };
+      const log: ActivityLog = { ...data, timestamp: data.timestamp.toDate() };
+
+      if (!latestLog || log.timestamp > latestLog.timestamp) {
+        latestLog = log;
+      }
+    });
+
+    if (latestLog) {
+      if (latestLog.type === 'return') {
+        console.log(`✅ Participant ${participant.id} last returned to camp`);
+        await updateParticipantLocation(eventId, participant.id, null);
+      } else {
+        console.log(`✅ Participant ${participant.id} is at activity ${latestLog.activityId}`);
+        await updateParticipantLocation(eventId, participant.id, latestLog.activityId || null);
+      }
+    }
+  }
+
+  console.log('🎉 Location backfill complete.');
+};
+
+export async function deleteActivity(eventId: string, activityId: string) {
   const logsQuery = query(
     collection(db, 'activityLogs'),
     where('activityId', '==', activityId)
@@ -635,9 +687,19 @@ export async function deleteActivity(_eventId: string, activityId: string) {
   const logsSnapshot = await getDocs(logsQuery);
 
   const batch = writeBatch(db);
+
   logsSnapshot.forEach((doc) => batch.delete(doc.ref));
 
-  // Delete activity
+  const participantsQuery = query(
+    collection(db, `events/${eventId}/participants`),
+    where('location', '==', activityId)
+  );
+  const participantsSnapshot = await getDocs(participantsQuery);
+
+  participantsSnapshot.forEach((docSnap) => {
+    batch.update(docSnap.ref, { location: 'camp' });
+  });
+
   const ref = doc(db, 'activities', activityId);
   batch.delete(ref);
 
