@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  db,
   getEvents,
   getParticipantsByEvent,
   getActivitiesByEvent,
@@ -7,7 +8,7 @@ import {
   getParticipantsByActivityId,
   getParticipantActivityLogs
 } from '../utils/firebase';
-import { Event, Participant, Activity } from '../types';
+import { Event, Participant, Activity, ActivityLog } from '../types';
 import AuthGuard from '../components/AuthGuard';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -22,6 +23,7 @@ import {
   ResponsiveContainer,
   CartesianGrid
 } from 'recharts';
+import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 
 const Reports: React.FC = () => {
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
@@ -38,41 +40,60 @@ const Reports: React.FC = () => {
       const events = await getEvents();
       const active = events.filter(e => e.active).sort((a, b) => b.startDate.getTime() - a.startDate.getTime())[0];
       setActiveEvent(active);
-      if (!active) return;
 
-      const participantsData = await getParticipantsByEvent(active.id);
+      if (!active) return; // ✅ Check if active event exists
+
+      // 🔥 1. Get all participants at once
+      const allParticipants = await getParticipantsByEvent(active.id);
+      setParticipants(allParticipants);
+
+      // 🔥 2. Get all activities
       const activitiesData = await getActivitiesByEvent(active.id);
-      const atCampData = await getParticipantsAtCamp(active.id);
+      setActivities(activitiesData);
 
-      const byActivityData: Record<string, Participant[]> = {};
+      // 🔥 3. Get all logs
+      const logsSnapshot = await getDocs(query(
+        collection(db, 'activityLogs'),
+        where('eventId', '==', active.id)
+      ));
+
+      const logs: ActivityLog[] = [];
+      logsSnapshot.forEach((doc) => {
+        const data = doc.data() as Omit<ActivityLog, 'timestamp'> & { timestamp: Timestamp };
+        logs.push({ ...data, timestamp: data.timestamp.toDate() });
+      });
+
+      // 🔥 4. Process current participants by activity using location
+      const liveCountMap: Record<string, Participant[]> = {};
       for (const activity of activitiesData) {
-        const list = await getParticipantsByActivityId(active.id, activity.id);
-        byActivityData[activity.id] = list;
+        liveCountMap[activity.id] = [];
       }
+      liveCountMap['camp'] = [];
 
-      const engagementMap: Record<string, Set<string>> = {};
-      for (const activity of activitiesData) {
-        engagementMap[activity.id] = new Set();
-      }
-
-      for (const participant of participantsData) {
-        const logs = await getParticipantActivityLogs(participant.id);
-        const latest = logs.find(log => log.type === 'change' || log.type === 'departure');
-        if (latest?.activityId && engagementMap[latest.activityId]) {
-          engagementMap[latest.activityId].add(participant.id);
+      for (const participant of allParticipants) {
+        if (participant.location && liveCountMap[participant.location]) {
+          liveCountMap[participant.location].push(participant);
+        } else {
+          liveCountMap['camp'].push(participant);
         }
       }
 
-      const engagementCounts: Record<string, number> = {};
-      for (const activityId in engagementMap) {
-        engagementCounts[activityId] = engagementMap[activityId].size;
+      setParticipantsByActivity(liveCountMap);
+
+      // 🔥 5. Process engagement counts (all-time logs per activity)
+      const engagementMap: Record<string, number> = {};
+
+      for (const log of logs) {
+        if (log.activityId) {
+          if (!engagementMap[log.activityId]) {
+            engagementMap[log.activityId] = 0;
+          }
+          engagementMap[log.activityId]++;
+        }
       }
 
-      setParticipants(participantsData);
-      setActivities(activitiesData);
-      setParticipantsAtCamp(atCampData);
-      setParticipantsByActivity(byActivityData);
-      setActivityEngagement(engagementCounts);
+      setActivityEngagement(engagementMap);
+
     } catch (error) {
       console.error('Error fetching report data:', error);
     } finally {
