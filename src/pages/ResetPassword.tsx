@@ -3,46 +3,87 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../utils/firebase';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { AlertTriangle } from 'lucide-react';
 
 const ResetPassword: React.FC = () => {
   const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleReset = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
+    setMessage(null);
+
     try {
       await sendPasswordResetEmail(auth, email);
-      setMessage('Password reset email sent. Please check your inbox.');
-      setTimeout(() => navigate('/login'), 3000);
-    } catch (error: any) {
-      setMessage(error.message);
+      setMessage('Password reset email sent! Please check your inbox.');
+      setTimeout(() => navigate('/login'), 3000); // Optional: Redirect after 3s
+    } catch (err: any) {
+      setError('Failed to send password reset email. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center px-4">
-      <h2 className="text-2xl font-bold mb-4">Reset Password</h2>
-      <form onSubmit={handleReset} className="space-y-4 w-full max-w-sm">
-        <Input
-          id="reset-email"
-          label="Email address"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          fullWidth
-        />
-        <Button type="submit" fullWidth isLoading={loading}>
-          Send Reset Email
-        </Button>
-      </form>
-      {message && <p className="mt-4 text-center text-sm text-gray-600">{message}</p>}
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Reset Your Password
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Enter your email address and we'll send you a link to reset your password.
+        </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {error && (
+            <div className="mb-4 bg-red-50 p-4 rounded-md flex">
+              <div className="flex-shrink-0">
+                <AlertTriangle className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {message && (
+            <div className="mb-4 bg-green-50 p-4 rounded-md">
+              <p className="text-sm text-green-700">{message}</p>
+            </div>
+          )}
+
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <Input
+              id="email"
+              label="Email address"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+              fullWidth
+            />
+
+            <Button type="submit" fullWidth isLoading={loading}>
+              Send Reset Email
+            </Button>
+          </form>
+
+          <div className="mt-4 text-center text-sm">
+            <Link to="/login" className="font-medium text-teal-600 hover:text-teal-500">
+              Back to login
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
