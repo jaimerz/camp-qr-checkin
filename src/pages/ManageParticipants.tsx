@@ -148,7 +148,8 @@ import DownloadQrModal from '../components/modals/DownloadQrModal';
 
         if (active) {
           const data = await getParticipantsByEvent(active.id);
-          setParticipants(data);
+          const sortedData = data.sort((a, b) => a.name.localeCompare(b.name));
+          setParticipants(sortedData);
         }
       } catch (error) {
         console.error('Error loading event or participants:', error);
@@ -179,7 +180,8 @@ import DownloadQrModal from '../components/modals/DownloadQrModal';
         try {
           await deleteParticipantWithLogs(participant.eventId, participant.id);
           const updatedList = await getParticipantsByEvent(participant.eventId);
-          setParticipants(updatedList);
+          const sortedList = updatedList.sort((a, b) => a.name.localeCompare(b.name));
+          setParticipants(sortedList);
           showMessage('Participant and logs deleted successfully', 'success');
         } catch (error) {
           console.error('Error deleting participant and logs:', error);
@@ -203,7 +205,8 @@ import DownloadQrModal from '../components/modals/DownloadQrModal';
               await deleteParticipantWithLogs(activeEvent.id, id);
             }
             const updatedList = await getParticipantsByEvent(activeEvent.id);
-            setParticipants(updatedList);
+            const sortedList = updatedList.sort((a, b) => a.name.localeCompare(b.name));
+            setParticipants(sortedList);
             setSelectedIds([]);
             setBulkAction('');
             showMessage('Selected participants deleted.', 'success');
@@ -406,7 +409,8 @@ import DownloadQrModal from '../components/modals/DownloadQrModal';
                     assignedLeaders: editLeaders,
                   });
                   const updatedList = await getParticipantsByEvent(activeEvent.id);
-                  setParticipants(updatedList);
+                  const sortedList = updatedList.sort((a, b) => a.name.localeCompare(b.name));
+                  setParticipants(sortedList);
                   setEditModalOpen(false);
                   showMessage('Participant updated.', 'success');
                 } catch (err) {
@@ -445,7 +449,8 @@ import DownloadQrModal from '../components/modals/DownloadQrModal';
               };
               await createParticipant(newParticipant);
               const updatedList = await getParticipantsByEvent(activeEvent.id);
-              setParticipants(updatedList);
+              const sortedList = updatedList.sort((a, b) => a.name.localeCompare(b.name));
+              setParticipants(sortedList);
               setName('');
               setChurch('');
               setType('student');
