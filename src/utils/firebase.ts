@@ -550,8 +550,7 @@ export async function getParticipantsByChurch(church: string, eventId: string) {
 }
 
 export async function getParticipantsByActivityId(eventId: string, activityId: string) {
-  console.log(`[getParticipantsByActivityId] Querying participants at activityId: ${activityId}`);
-
+  
   const participantsQuery = query(
     collection(db, 'events', eventId, 'participants'),
     where('location', '==', activityId)
@@ -568,15 +567,6 @@ export async function getParticipantsByActivityId(eventId: string, activityId: s
       createdAt: data.createdAt.toDate(),
     });
   });
-
-  console.log(`[getParticipantsByActivityId] Found ${participants.length} participants at activity ${activityId}`);
-
-  // 🔍 Optional: Log participant names to verify quickly
-  if (participants.length > 0) {
-    participants.forEach(p => {
-      console.log(`✔️ Participant at activity: ${activityId} --> ${p.name} (${p.id})`);
-    });
-  }
 
   return participants;
 }
@@ -596,13 +586,9 @@ export async function listAllParticipantLocations(eventId: string) {
     }
     locations[location]++;
   });
-
-  console.log('📍 Distinct participant locations and counts:', locations);
 }
 
 export async function getParticipantsAtCamp(eventId: string) {
-  console.log(`[getParticipantsAtCamp] Querying participants at camp for event: ${eventId}`);
-
   const participantsQuery = query(
     collection(db, 'events', eventId, 'participants'),
     where('location', '==', 'camp')
@@ -619,8 +605,6 @@ export async function getParticipantsAtCamp(eventId: string) {
       createdAt: data.createdAt.toDate(),
     });
   });
-
-  console.log(`[getParticipantsAtCamp] Found ${participants.length} participants at camp.`);
 
   return participants;
 }
