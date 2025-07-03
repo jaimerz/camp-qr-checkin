@@ -63,8 +63,9 @@ const ManageUsers: React.FC = () => {
       } catch (error) {
         console.error('Error deleting user:', error);
         showMessage('Error deleting user', 'error');
+      } finally {
+        setModalOpen(false);
       }
-      setModalOpen(false);
     });
   };
 
@@ -88,8 +89,9 @@ const ManageUsers: React.FC = () => {
           } catch (err) {
             console.error('Bulk delete error:', err);
             showMessage('Failed to delete some users.', 'error');
+          } finally {
+            setModalOpen(false);
           }
-          setModalOpen(false);
         }
       );
     }
@@ -145,7 +147,7 @@ const ManageUsers: React.FC = () => {
           console.error('Error updating role:', err);
           showMessage('Failed to update user role.', 'error');
         } finally {
-          setModalOpen(false); // ✅ Always close the modal
+          setModalOpen(false);
         }
       }
     );
