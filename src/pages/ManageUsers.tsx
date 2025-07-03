@@ -144,8 +144,9 @@ const ManageUsers: React.FC = () => {
         } catch (err) {
           console.error('Error updating role:', err);
           showMessage('Failed to update user role.', 'error');
+        } finally {
+          setModalOpen(false); // ✅ Always close the modal
         }
-        setModalOpen(false);
       }
     );
   };
