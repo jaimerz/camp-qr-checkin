@@ -103,7 +103,13 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
                     className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                   >
                     Events
-                  </Link>                  
+                  </Link>
+                  <Link
+                    to="/users"
+                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    Users
+                  </Link>
                 </>
               )}              
             </nav>
@@ -239,7 +245,14 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Events
-                </Link>                
+                </Link>
+                <Link
+                    to="/users"
+                    className="text-gray-600 hover:bg-gray-50 hover:text-gray-900 block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Users
+                  </Link>
               </>
             )}
           </div>

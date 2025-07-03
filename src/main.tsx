@@ -17,6 +17,7 @@ import ManageEvents from './pages/ManageEvents';
 import ManageActivities from './pages/ManageActivities';
 import Reports from './pages/Reports';
 import ResetPassword from './pages/ResetPassword';
+import ManageUsers from './pages/ManageUsers';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -38,6 +39,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/participants" element={<ManageParticipants />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/users" element={<ManageUsers />} />
         </Route>
       </Routes>
     </Router>

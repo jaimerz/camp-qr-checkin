@@ -129,6 +129,18 @@ const Dashboard: React.FC = () => {
                   </CardContent>
                 </Card>
               </Link>
+
+              <Link to="/users" className="block">
+                <Card className="h-full transition-transform hover:shadow-md hover:-translate-y-1">
+                  <CardContent className="flex flex-col items-center justify-center p-6">
+                    <Users className="h-12 w-12 text-red-500 mb-4" />
+                    <h3 className="font-medium text-gray-900">User Management</h3>
+                    <p className="text-sm text-gray-500 text-center mt-2">
+                      View and manage users and their roles
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
             </>
           )}
         </div>

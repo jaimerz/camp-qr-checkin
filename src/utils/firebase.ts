@@ -710,3 +710,27 @@ export async function updateActivity(activityId: string, updates: Partial<Activi
   const ref = doc(db, 'activities', activityId);
   await updateDoc(ref, updates);
 }
+
+// User related functions
+export async function getAllUsers() {
+  const usersSnapshot = await getDocs(collection(db, 'users'));
+  return usersSnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as User[];
+}
+
+export async function updateUserRole(userId: string, newRole: 'admin' | 'leader') {
+  const userRef = doc(db, 'users', userId);
+  await updateDoc(userRef, { role: newRole });
+}
+
+export async function updateUserData(userId: string, updates: Partial<User>) {
+  const userRef = doc(db, 'users', userId);
+  await updateDoc(userRef, updates);
+}
+
+export async function deleteUserFromDatabase(userId: string) {
+  const userRef = doc(db, 'users', userId);
+  await deleteDoc(userRef);
+}
