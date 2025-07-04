@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card'
 import Button from '../components/ui/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Modal from '../components/ui/Modal';
-import { getAllUsers, updateUserData, updateUserRole, deleteUserFromDatabase } from '../utils/firebase';
+import { getAllUsers, updateUser, deleteUserFromDatabase } from '../utils/firebase';
 import { User } from '../types';
 
 const ManageUsers: React.FC = () => {
@@ -124,7 +124,9 @@ const ManageUsers: React.FC = () => {
   };
 
   const confirmRoleChange = () => {
-    if (!editUser || editUser.role === editRole) {
+    if (!editUser) return;
+
+    if (editUser.role === editRole) {
       saveEdit();
       return;
     }
@@ -133,8 +135,11 @@ const ManageUsers: React.FC = () => {
       `Are you sure you want to change ${editUser.displayName}'s role from ${editUser.role} to ${editRole}?`,
       async () => {
         try {
-          await updateUserRole(editUser.id, editRole);
-          await updateUserData(editUser.id, { displayName: editName, email: editEmail });
+          await updateUser(editUser.id, {
+            displayName: editName,
+            email: editEmail,
+            role: editRole, // Send all updates in one go
+          });
 
           const updatedList = users.map((u) =>
             u.id === editUser.id ? { ...u, displayName: editName, email: editEmail, role: editRole } : u
@@ -144,7 +149,7 @@ const ManageUsers: React.FC = () => {
           setEditModalOpen(false);
           showMessage('User role updated.', 'success');
         } catch (err) {
-          console.error('Error updating role:', err);
+          console.error('Error updating user:', err);
           showMessage('Failed to update user role.', 'error');
         } finally {
           setModalOpen(false);
@@ -152,6 +157,7 @@ const ManageUsers: React.FC = () => {
       }
     );
   };
+
 
   if (loading) return <LoadingSpinner />;
 

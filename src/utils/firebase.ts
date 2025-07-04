@@ -720,12 +720,7 @@ export async function getAllUsers() {
   })) as User[];
 }
 
-export async function updateUserRole(userId: string, newRole: 'admin' | 'leader') {
-  const userRef = doc(db, 'users', userId);
-  await updateDoc(userRef, { role: newRole });
-}
-
-export async function updateUserData(userId: string, updates: Partial<User>) {
+export async function updateUser(userId: string, updates: Partial<User>) {
   const userRef = doc(db, 'users', userId);
   await updateDoc(userRef, updates);
 }
