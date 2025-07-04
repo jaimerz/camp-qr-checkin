@@ -174,7 +174,7 @@ const ManageUsers: React.FC = () => {
           <p>{confirmText}</p>
           <div className="mt-4 flex space-x-3">
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmAction}>Confirm</Button>
+            <Button variant="destructive" onClick={() => confirmAction()}>Confirm</Button>
           </div>
         </Modal>
 
