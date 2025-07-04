@@ -280,6 +280,7 @@ const ManageUsers: React.FC = () => {
           <input
             type="email"
             value={editEmail}
+            disabled
             onChange={(e) => setEditEmail(e.target.value)}
             className="w-full border p-2 rounded"
             placeholder="Email"
