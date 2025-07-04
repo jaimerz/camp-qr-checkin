@@ -4,7 +4,6 @@ import { Calendar, AlertTriangle } from 'lucide-react';
 import { registerUser } from '../utils/firebase';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
-import Select from '../components/ui/Select';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -12,8 +11,7 @@ const Register: React.FC = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    displayName: '',
-    role: 'leader',
+    displayName: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,8 +37,7 @@ const Register: React.FC = () => {
       await registerUser(
         formData.email,
         formData.password,
-        formData.displayName,
-        formData.role as 'admin' | 'leader'
+        formData.displayName
       );
       navigate('/dashboard');
     } catch (err: any) {
@@ -132,19 +129,6 @@ const Register: React.FC = () => {
               value={formData.confirmPassword}
               onChange={handleChange}
               required
-              fullWidth
-            />
-
-            <Select
-              id="role"
-              name="role"
-              label="Role"
-              value={formData.role}
-              onChange={handleChange}
-              options={[
-                { value: 'leader', label: 'Leader' },
-                { value: 'admin', label: 'Admin Leader' },
-              ]}
               fullWidth
             />
 

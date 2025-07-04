@@ -28,7 +28,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 // Participant related functions
@@ -94,7 +94,7 @@ export async function loginUser(email: string, password: string) {
   }
 }
 
-export async function registerUser(email: string, password: string, displayName: string, role: UserRole) {
+export async function registerUser(email: string, password: string, displayName: string) {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
@@ -103,7 +103,7 @@ export async function registerUser(email: string, password: string, displayName:
       id: user.uid,
       email,
       displayName,
-      role,
+      role: 'leader', // 🔒 New users can only register as Leaders, only admins can update this through User Management.
       createdAt: new Date(),
     };
     
@@ -709,4 +709,23 @@ export async function deleteActivity(eventId: string, activityId: string) {
 export async function updateActivity(activityId: string, updates: Partial<Activity>) {
   const ref = doc(db, 'activities', activityId);
   await updateDoc(ref, updates);
+}
+
+// User related functions
+export async function getAllUsers() {
+  const usersSnapshot = await getDocs(collection(db, 'users'));
+  return usersSnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as User[];
+}
+
+export async function updateUser(userId: string, updates: Partial<User>) {
+  const userRef = doc(db, 'users', userId);
+  await updateDoc(userRef, updates);
+}
+
+export async function deleteUserFromDatabase(userId: string) {
+  const userRef = doc(db, 'users', userId);
+  await deleteDoc(userRef);
 }

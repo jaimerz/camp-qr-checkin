@@ -81,6 +81,12 @@ const Login: React.FC = () => {
               fullWidth
             />
 
+            <p className="mt-2 text-sm text-center">
+              <Link to="/reset-password" className="font-medium text-teal-600 hover:text-teal-500">
+                Forgot your password?
+              </Link>
+            </p>
+
             <div>
               <Button
                 type="submit"
