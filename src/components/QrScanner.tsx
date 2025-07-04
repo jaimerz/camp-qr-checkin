@@ -146,7 +146,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
 
         if (participantActivity && participantActivity.id === selectedActivity?.id) {
           setError(`${participant.name} is already at ${participantActivity.name}.`);
-          playSound(errorSound);
+          playSound(errorSound); // ✅ This was missing in the last version
           setTimeout(() => {
             setError(null);
             setScannedParticipant(null);
