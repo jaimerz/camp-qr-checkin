@@ -35,6 +35,10 @@ const QrScanner: React.FC<QrScannerProps> = ({
   const IDLE_TIMEOUT = 60000; // 60 seconds
   const idleTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // 🔊 Sound feedback
+  const successSound = useRef(new Audio('/sounds/success.mp3'));
+  const errorSound = useRef(new Audio('/sounds/error.mp3'));
+
   useEffect(() => {
     let active = true;
 
@@ -97,6 +101,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
   const handleError = (err: any) => {
     console.error(err);
     setError('Error accessing camera. Please check permissions.');
+    errorSound.current.play();
     resetScanner();
   };
 
@@ -115,6 +120,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
 
       if (!participant) {
         setError('Invalid QR code. Participant not found.');
+        errorSound.current.play();
         setTimeout(() => {
           setError(null);
           resetScanner();
@@ -130,6 +136,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
 
         if (participantActivity && participantActivity.id === selectedActivity?.id) {
           setError(`${participant.name} is already at ${participantActivity.name}.`);
+          errorSound.current.play();
           setTimeout(() => {
             setError(null);
             setScannedParticipant(null);
@@ -146,6 +153,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
     } catch (err) {
       console.error(err);
       setError('Error processing QR code.');
+      errorSound.current.play();
       setTimeout(() => {
         setError(null);
         resetScanner();
@@ -160,6 +168,8 @@ const QrScanner: React.FC<QrScannerProps> = ({
       const activityId = scanType === 'departure' ? selectedActivity?.id || null : null;
       await onScan(scannedParticipant.id, activityId);
 
+      successSound.current.play();
+
       setConfirmModalOpen(false);
       setScannedParticipant(null);
       setCurrentActivity(null);
@@ -169,6 +179,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
     } catch (err) {
       console.error(err);
       setError('Error updating participant activity.');
+      errorSound.current.play();
       setConfirmModalOpen(false);
       setTimeout(() => {
         setError(null);
