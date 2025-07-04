@@ -110,7 +110,7 @@ const ManageUsers: React.FC = () => {
 
     try {
       const updates: Partial<User> = { displayName: editName, email: editEmail };
-      await updateUserData(editUser.id, updates);
+      await updateUser(editUser.id, updates);
       const updatedList = users.map((u) =>
         u.id === editUser.id ? { ...u, displayName: editName, email: editEmail } : u
       );
