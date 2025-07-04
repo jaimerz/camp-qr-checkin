@@ -111,9 +111,11 @@ const ManageUsers: React.FC = () => {
     try {
       const updates: Partial<User> = { displayName: editName, email: editEmail };
       await updateUser(editUser.id, updates);
+
       const updatedList = users.map((u) =>
         u.id === editUser.id ? { ...u, displayName: editName, email: editEmail } : u
       );
+
       setUsers(updatedList);
       setEditModalOpen(false);
       showMessage('User updated.', 'success');
@@ -131,6 +133,9 @@ const ManageUsers: React.FC = () => {
       return;
     }
 
+    // Close edit modal BEFORE opening confirmation modal
+    setEditModalOpen(false);
+
     openConfirmModal(
       `Are you sure you want to change ${editUser.displayName}'s role from ${editUser.role} to ${editRole}?`,
       async () => {
@@ -138,7 +143,7 @@ const ManageUsers: React.FC = () => {
           await updateUser(editUser.id, {
             displayName: editName,
             email: editEmail,
-            role: editRole, // Send all updates in one go
+            role: editRole,
           });
 
           const updatedList = users.map((u) =>
@@ -146,7 +151,6 @@ const ManageUsers: React.FC = () => {
           );
 
           setUsers(updatedList);
-          setEditModalOpen(false);
           showMessage('User role updated.', 'success');
         } catch (err) {
           console.error('Error updating user:', err);
@@ -157,7 +161,6 @@ const ManageUsers: React.FC = () => {
       }
     );
   };
-
 
   if (loading) return <LoadingSpinner />;
 
