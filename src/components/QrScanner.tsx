@@ -31,6 +31,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
   const [scannedParticipant, setScannedParticipant] = useState<Participant | null>(null);
   const [currentActivity, setCurrentActivity] = useState<Activity | null>(null);
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
 
   const IDLE_TIMEOUT = 60000; // 60 seconds
   const idleTimer = useRef<NodeJS.Timeout | null>(null);
@@ -76,6 +77,12 @@ const QrScanner: React.FC<QrScannerProps> = ({
     };
   }, []);
 
+  const playSound = (soundRef: React.MutableRefObject<HTMLAudioElement>) => {
+    if (!isMuted) {
+      soundRef.current.play().catch((err) => console.warn('Sound play error:', err));
+    }
+  };
+
   const resetIdleTimer = () => {
     if (idleTimer.current) {
       clearTimeout(idleTimer.current);
@@ -101,7 +108,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
   const handleError = (err: any) => {
     console.error(err);
     setError('Error accessing camera. Please check permissions.');
-    errorSound.current.play();
+    playSound(errorSound);
     resetScanner();
   };
 
@@ -120,13 +127,16 @@ const QrScanner: React.FC<QrScannerProps> = ({
 
       if (!participant) {
         setError('Invalid QR code. Participant not found.');
-        errorSound.current.play();
+        playSound(errorSound);
         setTimeout(() => {
           setError(null);
           resetScanner();
         }, 3000);
         return;
       }
+
+      // ✅ Play success sound immediately when a valid QR is scanned
+      playSound(successSound);
 
       setScannedParticipant(participant);
 
@@ -136,7 +146,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
 
         if (participantActivity && participantActivity.id === selectedActivity?.id) {
           setError(`${participant.name} is already at ${participantActivity.name}.`);
-          errorSound.current.play();
+          playSound(errorSound);
           setTimeout(() => {
             setError(null);
             setScannedParticipant(null);
@@ -153,7 +163,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
     } catch (err) {
       console.error(err);
       setError('Error processing QR code.');
-      errorSound.current.play();
+      playSound(errorSound);
       setTimeout(() => {
         setError(null);
         resetScanner();
@@ -168,8 +178,6 @@ const QrScanner: React.FC<QrScannerProps> = ({
       const activityId = scanType === 'departure' ? selectedActivity?.id || null : null;
       await onScan(scannedParticipant.id, activityId);
 
-      successSound.current.play();
-
       setConfirmModalOpen(false);
       setScannedParticipant(null);
       setCurrentActivity(null);
@@ -179,7 +187,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
     } catch (err) {
       console.error(err);
       setError('Error updating participant activity.');
-      errorSound.current.play();
+      playSound(errorSound);
       setConfirmModalOpen(false);
       setTimeout(() => {
         setError(null);
@@ -250,12 +258,17 @@ const QrScanner: React.FC<QrScannerProps> = ({
           </div>
         </CardContent>
         <CardFooter className="flex justify-between bg-gray-50">
+          <div className="flex items-center space-x-4">
+            <Button onClick={resetScanner} variant="outline">
+              Reset Scanner
+            </Button>
+            <Button onClick={() => setIsMuted(!isMuted)} variant="outline">
+              {isMuted ? 'Unmute' : 'Mute'}
+            </Button>
+          </div>
           <p className="text-sm text-gray-500">
             Position the QR code in the center of the screen
           </p>
-          <Button onClick={resetScanner} variant="outline">
-            Reset Scanner
-          </Button>
         </CardFooter>
       </Card>
 
