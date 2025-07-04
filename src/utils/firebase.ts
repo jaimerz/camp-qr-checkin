@@ -94,7 +94,7 @@ export async function loginUser(email: string, password: string) {
   }
 }
 
-export async function registerUser(email: string, password: string, displayName: string, role: UserRole) {
+export async function registerUser(email: string, password: string, displayName: string) {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
@@ -103,7 +103,7 @@ export async function registerUser(email: string, password: string, displayName:
       id: user.uid,
       email,
       displayName,
-      role,
+      role: 'leader', // 🔒 New users can only register as Leaders, only admins can update this through User Management.
       createdAt: new Date(),
     };
     
