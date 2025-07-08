@@ -15,8 +15,6 @@ const Header: React.FC = () => {
   const { user, loading } = useUser();
   const isAdmin = !loading && user?.role === 'admin'; // ✅ with loading guard
 
-  if (loading) return null;
-
   useEffect(() => {
     const fetchEvents = async () => {
       const allEvents = await getEvents();
@@ -24,6 +22,8 @@ const Header: React.FC = () => {
     };
     fetchEvents();
   }, []);
+
+  if (loading) return null;
 
   const activeEvent = events
     .filter((e) => e.active)
