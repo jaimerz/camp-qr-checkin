@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { Calendar, Users, MapPin, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Calendar, Users, MapPin, RefreshCw } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Tabs from '../components/ui/Tabs';
@@ -424,15 +424,6 @@ const EventDetail: React.FC = () => {
   return (
     <AuthGuard>
       <div className="space-y-6">
-        <div className="flex items-center mb-6">
-          <Link to="/dashboard" className="mr-4">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back
-            </Button>
-          </Link>
-          <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
-        </div>
         
         <Tabs
           tabs={tabs}

@@ -117,6 +117,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
         return;
       }
 
+      successSound.current.play().catch(() => {});
       setScannedParticipant(participant);
 
       if (scanType === 'departure') {
@@ -163,7 +164,6 @@ const QrScanner: React.FC<QrScannerProps> = ({
   const handleConfirm = async () => {
     if (!scannedParticipant) return;
     try {
-      successSound.current.play().catch(() => {});
       const activityId = scanType === 'departure' ? selectedActivity?.id || null : null;
       await onScan(scannedParticipant.id, activityId);
       setConfirmModalOpen(false);
