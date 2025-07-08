@@ -273,10 +273,10 @@ const QrScanner: React.FC<QrScannerProps> = ({
         </CardContent>
         <CardFooter className="flex justify-between bg-gray-50">
           <div className="flex items-center space-x-4">
-            <Button onClick={resetScanner} variant="outline">
+            <Button onClick={resetScanner} variant="outline" className="px-4">
               Reset Scanner
             </Button>
-            <Button onClick={() => setIsMuted(!isMuted)} variant="outline">
+            <Button onClick={() => setIsMuted(!isMuted)} variant="outline" className="px-4">
               {isMuted ? 'Unmute' : 'Mute'}
             </Button>
           </div>
