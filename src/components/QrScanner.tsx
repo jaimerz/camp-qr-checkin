@@ -271,16 +271,24 @@ const QrScanner: React.FC<QrScannerProps> = ({
             )}
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between bg-gray-50">
-          <div className="flex items-center space-x-4">
-            <Button onClick={resetScanner} variant="outline" className="px-4">
+        <CardFooter className="flex flex-col items-center gap-3 bg-gray-50 sm:items-start">
+          <div className="flex flex-row gap-3">
+            <Button
+              onClick={resetScanner}
+              variant="outline"
+              className="px-4 py-2 whitespace-nowrap"
+            >
               Reset Scanner
             </Button>
-            <Button onClick={() => setIsMuted(!isMuted)} variant="outline" className="px-4">
+            <Button
+              onClick={() => setIsMuted(!isMuted)}
+              variant="outline"
+              className="px-4 py-2"
+            >
               {isMuted ? 'Unmute' : 'Mute'}
             </Button>
           </div>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 text-center sm:text-left">
             Position the QR code in the center of the screen
           </p>
         </CardFooter>
