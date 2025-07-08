@@ -31,12 +31,10 @@ const QrScanner: React.FC<QrScannerProps> = ({
   const [scannedParticipant, setScannedParticipant] = useState<Participant | null>(null);
   const [currentActivity, setCurrentActivity] = useState<Activity | null>(null);
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
 
-  const IDLE_TIMEOUT = 60000; // 60 seconds
+  const IDLE_TIMEOUT = 60000;
   const idleTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // 🔊 Sound feedback
   const successSound = useRef(new Audio('/sounds/success.mp3'));
   const errorSound = useRef(new Audio('/sounds/error.mp3'));
 
@@ -59,13 +57,10 @@ const QrScanner: React.FC<QrScannerProps> = ({
 
     return () => {
       active = false;
-      if (idleTimer.current) {
-        clearTimeout(idleTimer.current);
-      }
+      if (idleTimer.current) clearTimeout(idleTimer.current);
       const videoEl = qrReaderRef.current?.video;
       const stream = videoEl?.srcObject as MediaStream;
-
-      if (stream && stream.getTracks) {
+      if (stream?.getTracks) {
         stream.getTracks().forEach((track) => {
           try {
             track.stop();
@@ -77,16 +72,8 @@ const QrScanner: React.FC<QrScannerProps> = ({
     };
   }, []);
 
-  const playSound = (soundRef: React.MutableRefObject<HTMLAudioElement>) => {
-    if (!isMuted) {
-      soundRef.current.play().catch((err) => console.warn('Sound play error:', err));
-    }
-  };
-
   const resetIdleTimer = () => {
-    if (idleTimer.current) {
-      clearTimeout(idleTimer.current);
-    }
+    if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => {
       console.log('⏳ Idle timeout reached, resetting scanner...');
       resetScanner();
@@ -94,9 +81,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
   };
 
   const resetScanner = () => {
-    if (idleTimer.current) {
-      clearTimeout(idleTimer.current);
-    }
+    if (idleTimer.current) clearTimeout(idleTimer.current);
     setScanning(false);
     setScannerKey((prev) => prev + 1);
     setTimeout(() => {
@@ -108,15 +93,13 @@ const QrScanner: React.FC<QrScannerProps> = ({
   const handleError = (err: any) => {
     console.error(err);
     setError('Error accessing camera. Please check permissions.');
-    playSound(errorSound);
+    errorSound.current.play().catch(() => {});
     resetScanner();
   };
 
   const handleScan = async (data: { text: string } | null) => {
     resetIdleTimer();
-
-    if (!data || !data.text) return;
-    if (!scanning) return;
+    if (!data?.text || !scanning) return;
 
     const qrCode = data.text.trim();
     console.log('📦 Scanned QR text:', qrCode);
@@ -124,10 +107,9 @@ const QrScanner: React.FC<QrScannerProps> = ({
     try {
       setScanning(false);
       const participant = await getParticipantInfo(qrCode);
-
       if (!participant) {
         setError('Invalid QR code. Participant not found.');
-        playSound(errorSound);
+        errorSound.current.play().catch(() => {});
         setTimeout(() => {
           setError(null);
           resetScanner();
@@ -135,18 +117,15 @@ const QrScanner: React.FC<QrScannerProps> = ({
         return;
       }
 
-      // ✅ Play success sound immediately when a valid QR is scanned
-      playSound(successSound);
-
+      successSound.current.play().catch(() => {});
       setScannedParticipant(participant);
 
       if (scanType === 'departure') {
         const participantActivity = await getParticipantCurrentActivity(participant.id);
         setCurrentActivity(participantActivity);
-
         if (participantActivity && participantActivity.id === selectedActivity?.id) {
           setError(`${participant.name} is already at ${participantActivity.name}.`);
-          playSound(errorSound); // ✅ This was missing in the last version
+          errorSound.current.play().catch(() => {});
           setTimeout(() => {
             setError(null);
             setScannedParticipant(null);
@@ -155,29 +134,26 @@ const QrScanner: React.FC<QrScannerProps> = ({
           }, 3000);
           return;
         }
-
         setConfirmModalOpen(true);
       } else if (scanType === 'return') {
-          const participantActivity = await getParticipantCurrentActivity(participant.id);
-
-          if (!participantActivity) {
-            setError(`${participant.name} is already at camp.`);
-            playSound(errorSound);
-            setTimeout(() => {
-              setError(null);
-              setScannedParticipant(null);
-              resetScanner();
-            }, 3000);
-            return;
-          }
-
-          setCurrentActivity(participantActivity);
-          setConfirmModalOpen(true);
+        const participantActivity = await getParticipantCurrentActivity(participant.id);
+        if (!participantActivity) {
+          setError(`${participant.name} is already at camp.`);
+          errorSound.current.play().catch(() => {});
+          setTimeout(() => {
+            setError(null);
+            setScannedParticipant(null);
+            resetScanner();
+          }, 3000);
+          return;
         }
+        setCurrentActivity(participantActivity);
+        setConfirmModalOpen(true);
+      }
     } catch (err) {
       console.error(err);
       setError('Error processing QR code.');
-      playSound(errorSound);
+      errorSound.current.play().catch(() => {});
       setTimeout(() => {
         setError(null);
         resetScanner();
@@ -187,21 +163,17 @@ const QrScanner: React.FC<QrScannerProps> = ({
 
   const handleConfirm = async () => {
     if (!scannedParticipant) return;
-
     try {
       const activityId = scanType === 'departure' ? selectedActivity?.id || null : null;
       await onScan(scannedParticipant.id, activityId);
-
       setConfirmModalOpen(false);
       setScannedParticipant(null);
       setCurrentActivity(null);
-      setTimeout(() => {
-        resetScanner();
-      }, 1000);
+      setTimeout(() => resetScanner(), 1000);
     } catch (err) {
       console.error(err);
       setError('Error updating participant activity.');
-      playSound(errorSound);
+      errorSound.current.play().catch(() => {});
       setConfirmModalOpen(false);
       setTimeout(() => {
         setError(null);
@@ -214,9 +186,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
     setConfirmModalOpen(false);
     setScannedParticipant(null);
     setCurrentActivity(null);
-    setTimeout(() => {
-      resetScanner();
-    }, 500);
+    setTimeout(() => resetScanner(), 500);
   };
 
   if (cameraPermission === false) {
@@ -280,13 +250,6 @@ const QrScanner: React.FC<QrScannerProps> = ({
             >
               Reset Scanner
             </Button>
-            <Button
-              onClick={() => setIsMuted(!isMuted)}
-              variant="outline"
-              className="px-4 py-2"
-            >
-              {isMuted ? 'Unmute' : 'Mute'}
-            </Button>
           </div>
           <p className="text-sm text-gray-500 text-center sm:text-left">
             Position the QR code in the center of the screen
@@ -305,11 +268,9 @@ const QrScanner: React.FC<QrScannerProps> = ({
                     : `Register ${scannedParticipant.name} for ${selectedActivity?.name}?`}
                 </p>
               )}
-
               {scanType === 'return' && (
                 <p>{`Confirm ${scannedParticipant.name} is returning to camp?`}</p>
               )}
-
               <div className="mt-6 flex space-x-3">
                 <Button variant="outline" onClick={handleCancel}>
                   Cancel
