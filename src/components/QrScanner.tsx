@@ -158,8 +158,22 @@ const QrScanner: React.FC<QrScannerProps> = ({
 
         setConfirmModalOpen(true);
       } else if (scanType === 'return') {
-        setConfirmModalOpen(true);
-      }
+          const participantActivity = await getParticipantCurrentActivity(participant.id);
+
+          if (!participantActivity) {
+            setError(`${participant.name} is already at camp.`);
+            playSound(errorSound);
+            setTimeout(() => {
+              setError(null);
+              setScannedParticipant(null);
+              resetScanner();
+            }, 3000);
+            return;
+          }
+
+          setCurrentActivity(participantActivity);
+          setConfirmModalOpen(true);
+        }
     } catch (err) {
       console.error(err);
       setError('Error processing QR code.');
