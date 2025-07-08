@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { UserProvider } from './context/UserContext';
 import './index.css';
 
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -21,27 +22,29 @@ import ManageUsers from './pages/ManageUsers';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Router>
-      <ScrollToTop />
-      <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        
-        <Route element={<DashboardLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/events" element={<ManageEvents />} />
-          <Route path="/events/:eventId" element={<EventDetail />} />
-          <Route path="/scan/:eventId" element={<QrScanner />} />
-          <Route path="/participants/import/:eventId" element={<ParticipantImport />} />
-          <Route path="/events/:eventId/participants/:qrCode" element={<ParticipantDetail />} />
-          <Route path="/activities" element={<ManageActivities />} />
-          <Route path="/participants" element={<ManageParticipants />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/users" element={<ManageUsers />} />
-        </Route>
-      </Routes>
-    </Router>
+    <UserProvider>
+      <Router>
+        <ScrollToTop />
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/events" element={<ManageEvents />} />
+            <Route path="/events/:eventId" element={<EventDetail />} />
+            <Route path="/scan/:eventId" element={<QrScanner />} />
+            <Route path="/participants/import/:eventId" element={<ParticipantImport />} />
+            <Route path="/events/:eventId/participants/:qrCode" element={<ParticipantDetail />} />
+            <Route path="/activities" element={<ManageActivities />} />
+            <Route path="/participants" element={<ManageParticipants />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/users" element={<ManageUsers />} />
+          </Route>
+        </Routes>
+      </Router>
+    </UserProvider>
   </StrictMode>
 );

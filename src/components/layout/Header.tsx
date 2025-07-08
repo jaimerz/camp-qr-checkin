@@ -4,19 +4,16 @@ import { Event } from '../../types';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, ChevronDown, LogOut, Settings, Users, Calendar, BarChart, Menu, X } from 'lucide-react';
 import { logoutUser } from '../../utils/firebase';
-import { User as UserType } from '../../types';
 import Button from '../ui/Button';
+import { useUser } from '../../context/UserContext'; // ✅ NEW
 
-interface HeaderProps {
-  user: UserType | null;
-}
-
-const Header: React.FC<HeaderProps> = ({ user }) => {
+const Header: React.FC = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
-  const isAdmin = user?.role === 'admin';  
+  const { user, loading } = useUser(); // ✅ NEW
+  const isAdmin = !loading && user?.role === 'admin'; // ✅ with loading guard
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -42,13 +39,8 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
     }
   };
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
-  const toggleProfileMenu = () => {
-    setIsProfileMenuOpen(!isProfileMenuOpen);
-  };
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const toggleProfileMenu = () => setIsProfileMenuOpen(!isProfileMenuOpen);
 
   return (
     <header className="bg-white shadow-sm">
