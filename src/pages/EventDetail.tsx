@@ -31,6 +31,12 @@ const EventDetail: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedActivityParticipants, setSelectedActivityParticipants] = useState<Participant[]>([]);
   const [selectedActivityName, setSelectedActivityName] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const normalize = (s: string) => s.trim().toLowerCase();
+  const matchesSearch = (p: Participant) =>
+    normalize(p.name).includes(normalize(searchQuery)) ||
+    normalize(p.church).includes(normalize(searchQuery));
   
   const openParticipantsModal = (activityId: string, activityName: string) => {
     setSelectedActivityParticipants(participantsByActivity[activityId] || []);
@@ -205,52 +211,35 @@ const EventDetail: React.FC = () => {
     {
       id: 'locations',
       label: 'By Location',
-      content: (
-        <div className="space-y-6">
-          <div className="flex justify-end mb-4">
-            <Button variant="outline" size="sm" onClick={fetchData}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Sync View
-            </Button>
-          </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>At Camp</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {participantsAtCamp.length > 0 ? (
-                <div className="space-y-2">
-                  {participantsAtCamp.map((participant) => (
-                    <div 
-                      key={participant.id}
-                      className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50"
-                    >
-                      <div>
-                        <p className="font-medium">{participant.name}</p>
-                        <p className="text-sm text-gray-500">{participant.church}</p>
-                      </div>
-                      <Badge variant={participant.type === 'student' ? 'primary' : 'secondary'}>
-                        {participant.type}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center py-4">No participants at camp</p>
-              )}
-            </CardContent>
-          </Card>
-          
-          {activities.map((activity) => (
-            <Card key={activity.id}>
+      content: (() => {
+        const filteredAtCamp = participantsAtCamp.filter(matchesSearch);
+
+        return (
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+              <input
+                type="text"
+                placeholder="Search by name or church"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="border border-gray-300 rounded-md px-4 py-2 w-full md:w-1/2"
+              />
+              <Button variant="outline" size="sm" onClick={fetchData}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Sync View
+              </Button>
+            </div>
+
+            <Card>
               <CardHeader>
-                <CardTitle>{activity.name}</CardTitle>
+                <CardTitle>
+                  At Camp ({filteredAtCamp.length} / {participantsAtCamp.length})
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                {participantsByActivity[activity.id]?.length > 0 ? (
-                  <div className="space-y-2">
-                    {participantsByActivity[activity.id].map((participant) => (
+                {participantsAtCamp.length > 0 ? (
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {filteredAtCamp.map((participant) => (
                       <div 
                         key={participant.id}
                         className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50"
@@ -266,64 +255,111 @@ const EventDetail: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">No participants at this activity</p>
+                  <p className="text-gray-500 text-center py-4">No participants at camp</p>
                 )}
               </CardContent>
             </Card>
-          ))}
-        </div>
-      ),
+
+            {activities.map((activity) => {
+              const all = participantsByActivity[activity.id] || [];
+              const filtered = all.filter(matchesSearch);
+              return (
+                <Card key={activity.id}>
+                  <CardHeader>
+                    <CardTitle>{activity.name} ({filtered.length} / {all.length})</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {all.length > 0 ? (
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                        {filtered.map((participant) => (
+                          <div 
+                            key={participant.id}
+                            className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50"
+                          >
+                            <div>
+                              <p className="font-medium">{participant.name}</p>
+                              <p className="text-sm text-gray-500">{participant.church}</p>
+                            </div>
+                            <Badge variant={participant.type === 'student' ? 'primary' : 'secondary'}>
+                              {participant.type}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">No matching participants</p>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        );
+      })(),
     },
     {
       id: 'participants',
       label: 'Participants',
-      content: (
-        <div className="space-y-6">
-          <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={fetchData}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Sync View
-            </Button>
-          </div>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>All Participants</CardTitle>              
-            </CardHeader>
-            <CardContent>
-              {participants.length > 0 ? (
-                <div className="space-y-2">
-                  {participants.map((participant) => (
-                    <Link 
-                      key={participant.id}
-                      to={`/events/${participant.eventId}/participants/${participant.qrCode}`}
-                      className="block"
-                    >
-                      <div className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50">
-                        <div>
-                          <p className="font-medium">{participant.name}</p>
-                          <p className="text-sm text-gray-500">{participant.church}</p>
+      content: (() => {
+        const filteredParticipants = participants.filter(matchesSearch);
+
+        return (
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <input
+                type="text"
+                placeholder="Search by name or church"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="border border-gray-300 rounded-md px-4 py-2 w-full md:w-1/2"
+              />
+              <Button variant="outline" size="sm" onClick={fetchData}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Sync View
+              </Button>
+            </div>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>
+                  All Participants ({filteredParticipants.length} / {participants.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {participants.length > 0 ? (
+                  <div className="space-y-2">
+                    {filteredParticipants.map((participant) => (
+                      <Link 
+                        key={participant.id}
+                        to={`/events/${participant.eventId}/participants/${participant.qrCode}`}
+                        className="block"
+                      >
+                        <div className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50">
+                          <div>
+                            <p className="font-medium">{participant.name}</p>
+                            <p className="text-sm text-gray-500">{participant.church}</p>
+                          </div>
+                          <Badge variant={participant.type === 'student' ? 'primary' : 'secondary'}>
+                            {participant.type}
+                          </Badge>
                         </div>
-                        <Badge variant={participant.type === 'student' ? 'primary' : 'secondary'}>
-                          {participant.type}
-                        </Badge>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Participants Yet</h3>
-                  <p className="text-gray-500 mb-6">
-                    Participants will be visible once an admin imports them.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      ),
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Participants Yet</h3>
+                    <p className="text-gray-500 mb-6">
+                      Participants will be visible once an admin imports them.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        );
+      })(),
     },
     {
       id: 'activities',

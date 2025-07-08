@@ -43,6 +43,11 @@ import DownloadQrModal from '../components/modals/DownloadQrModal';
     new Set(participants.filter(p => p.type === 'leader').map(p => p.name))
   );
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const normalize = (s: string) => s.trim().toLowerCase();
+  const matchesSearch = (p: Participant) =>
+    normalize(p.name).includes(normalize(searchQuery)) ||
+    normalize(p.church).includes(normalize(searchQuery));
   
   const TagInput: React.FC<{
     tags: string[];
@@ -311,26 +316,37 @@ import DownloadQrModal from '../components/modals/DownloadQrModal';
         </div>
 
         <Card>
-          <CardHeader className="flex items-center space-x-3">
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center space-x-3 w-full md:w-auto">
+              <input
+                type="checkbox"
+                checked={participants.length > 0 && selectedIds.length === participants.length}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedIds(participants.map((p) => p.id));
+                  } else {
+                    setSelectedIds([]);
+                  }
+                }}
+                className="h-4 w-4"
+              />
+              <CardTitle>
+                All Participants ({participants.filter(matchesSearch).length} / {participants.length})
+              </CardTitle>
+            </div>
             <input
-              type="checkbox"
-              checked={participants.length > 0 && selectedIds.length === participants.length}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setSelectedIds(participants.map((p) => p.id));
-                } else {
-                  setSelectedIds([]);
-                }
-              }}
-              className="h-4 w-4"
+              type="text"
+              placeholder="Search by name or church"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border border-gray-300 rounded-md px-4 py-2 w-full md:w-1/3"
             />
-            <CardTitle>All Participants</CardTitle>
           </CardHeader>
 
           <CardContent>
             {participants.length > 0 ? (
-              <div className="space-y-2">
-                {participants.map((participant) => (
+              <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                {participants.filter(matchesSearch).map((participant) => (
                   <div
                     key={participant.id}
                     className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50"
@@ -369,7 +385,8 @@ import DownloadQrModal from '../components/modals/DownloadQrModal';
               <p className="text-sm text-gray-600">No participants found.</p>
             )}
           </CardContent>
-      </Card>
+        </Card>
+
       </div>
       <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} title="Edit Participant">
         <div className="space-y-4">

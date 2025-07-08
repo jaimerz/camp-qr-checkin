@@ -23,6 +23,11 @@ const ManageUsers: React.FC = () => {
   const [editRole, setEditRole] = useState<'leader' | 'admin'>('leader');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkAction, setBulkAction] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const normalize = (s: string) => s.trim().toLowerCase();
+  const matchesSearch = (u: User) =>
+    normalize(u.displayName).includes(normalize(searchQuery)) ||
+    normalize(u.email).includes(normalize(searchQuery));
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -206,26 +211,37 @@ const ManageUsers: React.FC = () => {
         </div>
 
         <Card>
-          <CardHeader className="flex items-center space-x-3">
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center space-x-3 w-full md:w-auto">
+              <input
+                type="checkbox"
+                checked={users.length > 0 && selectedIds.length === users.length}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedIds(users.map((u) => u.id));
+                  } else {
+                    setSelectedIds([]);
+                  }
+                }}
+                className="h-4 w-4"
+              />
+              <CardTitle>
+                All Users ({users.filter(matchesSearch).length} / {users.length})
+              </CardTitle>
+            </div>
             <input
-              type="checkbox"
-              checked={users.length > 0 && selectedIds.length === users.length}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setSelectedIds(users.map((u) => u.id));
-                } else {
-                  setSelectedIds([]);
-                }
-              }}
-              className="h-4 w-4"
+              type="text"
+              placeholder="Search by name or email"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border border-gray-300 rounded-md px-4 py-2 w-full md:w-1/3"
             />
-            <CardTitle>All Users</CardTitle>
           </CardHeader>
 
           <CardContent>
             {users.length > 0 ? (
               <div className="space-y-2">
-                {users.map((user) => (
+                {users.filter(matchesSearch).map((user) => (
                   <div
                     key={user.id}
                     className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50"
