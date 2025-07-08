@@ -16,7 +16,7 @@ import {
   addDoc,
   serverTimestamp 
 } from 'firebase/firestore';
-import { User, UserRole, Participant, Activity, ActivityLog, Event } from '../types';
+import { User, Participant, Activity, ActivityLog, Event } from '../types';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -116,19 +116,6 @@ export async function registerUser(email: string, password: string, displayName:
 
 export async function logoutUser() {
   return signOut(auth);
-}
-
-export async function getCurrentUser() {
-  const user = auth.currentUser;
-  
-  if (user) {
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    if (userDoc.exists()) {
-      return { user, userData: userDoc.data() as User };
-    }
-  }
-  
-  return null;
 }
 
 // Event related functions
@@ -728,4 +715,13 @@ export async function updateUser(userId: string, updates: Partial<User>) {
 export async function deleteUserFromDatabase(userId: string) {
   const userRef = doc(db, 'users', userId);
   await deleteDoc(userRef);
+}
+
+export async function getUserById(uid: string): Promise<User> {
+  const docRef = doc(db, 'users', uid);
+  const docSnap = await getDoc(docRef);
+  if (!docSnap.exists()) {
+    throw new Error('User not found');
+  }
+  return { id: docSnap.id, ...docSnap.data() } as User;
 }

@@ -14,7 +14,8 @@ import QrScanner from '../components/QrScanner';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Select from '../components/ui/Select';
 import Button from '../components/ui/Button';
-import { updateParticipantLocation, getCurrentUser } from '../utils/firebase';
+import { updateParticipantLocation } from '../utils/firebase';
+import { useUser } from '../context/UserContext';
 
 const QrScannerPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -23,6 +24,7 @@ const QrScannerPage: React.FC = () => {
   const [scanType, setScanType] = useState<'departure' | 'return'>('departure');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useUser();
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -51,9 +53,8 @@ const QrScannerPage: React.FC = () => {
     if (!eventId) return;
   
     try {
-      const userInfo = await getCurrentUser();
-      const leaderId = userInfo?.user.uid;
-  
+      const leaderId = user?.id;
+
       if (!leaderId) {
         alert('Error: unable to identify scanner.');
         return false;

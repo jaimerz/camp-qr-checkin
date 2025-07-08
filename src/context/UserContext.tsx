@@ -1,6 +1,6 @@
-// context/UserContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getCurrentUser } from '../utils/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth, getUserById } from '../utils/firebase';
 import { User } from '../types';
 
 interface UserContextType {
@@ -15,17 +15,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const result = await getCurrentUser();
-        setUser(result?.userData || null);
-      } catch (e) {
-        console.error('Failed to load user', e);
-      } finally {
-        setLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const userData = await getUserById(firebaseUser.uid); // fetch from Firestore
+          setUser(userData);
+        } catch (err) {
+          console.error('Failed to fetch user data from Firestore:', err);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
       }
-    };
-    load();
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   return (
