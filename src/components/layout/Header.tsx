@@ -2,18 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { getEvents } from '../../utils/firebase';
 import { Event } from '../../types';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, ChevronDown, LogOut, Settings, Users, Calendar, BarChart, Menu, X } from 'lucide-react';
+import { User, ChevronDown, LogOut, Settings, Calendar, Menu, X } from 'lucide-react';
 import { logoutUser } from '../../utils/firebase';
 import Button from '../ui/Button';
-import { useUser } from '../../context/UserContext'; // ✅ NEW
+import { useUser } from '../../context/UserContext';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
-  const { user, loading } = useUser(); // ✅ NEW
+  const { user, loading } = useUser();
   const isAdmin = !loading && user?.role === 'admin'; // ✅ with loading guard
+
+  if (loading) return null;
 
   useEffect(() => {
     const fetchEvents = async () => {
