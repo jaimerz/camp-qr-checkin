@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { updateEmail, updatePassword } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
 import { useUser } from '../context/UserContext';
-import { db } from '../utils/firebase';
+import { updateUser } from '../utils/firebase';
 import AuthGuard from '../components/AuthGuard';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 
 const UserProfile: React.FC = () => {
-  const { user } = useUser(); // user.id, user.displayName, user.email, user.auth
+  const { user } = useUser();
   const [modalOpen, setModalOpen] = useState<'name' | 'email' | 'password' | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,28 +21,28 @@ const UserProfile: React.FC = () => {
   };
 
   const handleUpdate = async () => {
-    if (!user?.id || !user?.auth) return;
+    if (!user?.id || !user?.auth || !modalOpen) return;
+
+    console.log('handleUpdate fired:', modalOpen, inputValue);
     setLoading(true);
+
     try {
       if (modalOpen === 'name') {
-        await updateDoc(doc(db, 'users', user.id), {
-          displayName: inputValue,
-        });
+        await updateUser(user.id, { displayName: inputValue });
       } else if (modalOpen === 'email') {
         await updateEmail(user.auth, inputValue);
-        await updateDoc(doc(db, 'users', user.id), {
-          email: inputValue,
-        });
+        await updateUser(user.id, { email: inputValue });
       } else if (modalOpen === 'password') {
         await updatePassword(user.auth, inputValue);
       }
+
       showMessage('Updated successfully!', 'success');
+      setModalOpen(null);
     } catch (err: any) {
-      console.error(err);
+      console.error('Update error:', err);
       showMessage(err.message || 'Update failed.', 'error');
     } finally {
       setLoading(false);
-      setModalOpen(null);
     }
   };
 
