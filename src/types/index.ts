@@ -1,3 +1,5 @@
+import type { User as FirebaseAuthUser } from 'firebase/auth';
+
 export type UserRole = 'admin' | 'leader';
 
 export interface User {
@@ -6,6 +8,7 @@ export interface User {
   displayName: string;
   role: UserRole;
   createdAt: Date;
+  auth: FirebaseAuthUser;
 }
 
 export interface Event {
