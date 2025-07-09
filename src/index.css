@@ -9,5 +9,6 @@
 
   input, select, textarea {
     @apply text-base;
+    scroll-padding-top: 4rem; /* match your header height */
   }
 }

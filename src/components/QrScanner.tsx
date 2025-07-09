@@ -117,7 +117,6 @@ const QrScanner: React.FC<QrScannerProps> = ({
         return;
       }
 
-      successSound.current.play().catch(() => {});
       setScannedParticipant(participant);
 
       if (scanType === 'departure') {
@@ -134,6 +133,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
           }, 3000);
           return;
         }
+        successSound.current.play().catch(() => {});
         setConfirmModalOpen(true);
       } else if (scanType === 'return') {
         const participantActivity = await getParticipantCurrentActivity(participant.id);
@@ -148,6 +148,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
           return;
         }
         setCurrentActivity(participantActivity);
+        successSound.current.play().catch(() => {});
         setConfirmModalOpen(true);
       }
     } catch (err) {

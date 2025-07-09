@@ -5,7 +5,6 @@ import {
   createEvent,
   deleteEventWithCascade,
   setActiveEvent,
-  getCurrentUser,
 } from '../utils/firebase';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -13,6 +12,7 @@ import Modal from '../components/ui/Modal';
 import AuthGuard from '../components/AuthGuard';
 import { Trash2 } from 'lucide-react';
 import { doc, updateDoc, getFirestore } from 'firebase/firestore';
+import { useUser } from '../context/UserContext';
 
 const ManageEvents: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -20,7 +20,6 @@ const ManageEvents: React.FC = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [description, setDescription] = useState('');
-  const [user, setUser] = useState<User | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [confirmInput, setConfirmInput] = useState('');
@@ -31,6 +30,7 @@ const ManageEvents: React.FC = () => {
   const [editDesc, setEditDesc] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
+  const { user } = useUser();
 
   const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
     setMessage(text);
@@ -44,12 +44,7 @@ const ManageEvents: React.FC = () => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser?.userData || null);
-      fetchEvents();
-    };
-    fetchData();
+    fetchEvents();
   }, []);
 
   const generateEventId = (name: string) => {

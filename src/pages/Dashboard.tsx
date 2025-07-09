@@ -1,43 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Users, MapPin, BarChart, Activity, QrCode } from 'lucide-react';
-import { getCurrentUser, getEvents } from '../utils/firebase';
-import { User, Event } from '../types';
+import { getEvents } from '../utils/firebase';
+import { Event } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import AuthGuard from '../components/AuthGuard';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useUser } from '../context/UserContext';
 
 const Dashboard: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, loading: userLoading } = useUser();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const activeEvent = events
-    .filter((event) => event.active)
-    .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())[0];
-  const activeEventId = activeEvent?.id;
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchEvents = async () => {
       try {
-        const userResult = await getCurrentUser();
-        if (userResult) {
-          setUser(userResult.userData);
-        }
-        
         const eventsData = await getEvents();
         setEvents(eventsData);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching events:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchEvents();
   }, []);
 
-  if (loading) {
+  const activeEvent = events
+    .filter((event) => event.active)
+    .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())[0];
+  const activeEventId = activeEvent?.id;
+
+  if (userLoading || loading) {
     return <LoadingSpinner />;
   }
 

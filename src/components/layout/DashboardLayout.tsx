@@ -1,36 +1,39 @@
-import React, { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
-import { getCurrentUser } from '../../utils/firebase';
-import { User } from '../../types';
 import LoadingSpinner from '../LoadingSpinner';
+import { useUser } from '../../context/UserContext';
 
 const DashboardLayout: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { loading } = useUser();
+  const location = useLocation();
+  const layoutRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const userResult = await getCurrentUser();
-        if (userResult) {
-          setUser(userResult.userData);
+    let attempt = 0;
+
+    const scrollToTop = () => {
+      requestAnimationFrame(() => {
+        if (layoutRef.current) {
+          window.scrollTo({ top: 0, behavior: 'auto' });
+
+          // If header isn't fully rendered yet, try again a few times
+          if (window.scrollY > 2 && attempt < 10) {
+            attempt++;
+            scrollToTop();
+          }
         }
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-        setLoading(false);
-      }
+      });
     };
 
-    fetchUser();
-  }, []);
+    scrollToTop();
+  }, [location.pathname]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
-        <Header user={null} />
+      <div ref={layoutRef} className="min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
+        <Header />
         <div className="flex-grow flex items-center justify-center">
           <LoadingSpinner size="lg" />
         </div>
@@ -40,8 +43,8 @@ const DashboardLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
-      <Header user={user} />
+    <div ref={layoutRef} className="min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
+      <Header />
       <main className="flex-grow">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <Outlet />
