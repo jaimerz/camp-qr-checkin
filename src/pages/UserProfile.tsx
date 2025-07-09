@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { updateEmail, updatePassword } from 'firebase/auth';
 import { useUser } from '../context/UserContext';
 import { updateUser } from '../utils/firebase';
 import AuthGuard from '../components/AuthGuard';
@@ -8,7 +7,7 @@ import Modal from '../components/ui/Modal';
 
 const UserProfile: React.FC = () => {
   const { user } = useUser();
-  const [modalOpen, setModalOpen] = useState<'name' | 'email' | 'password' | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -21,26 +20,15 @@ const UserProfile: React.FC = () => {
   };
 
   const handleUpdate = async () => {
-    if (!user?.id || !user?.auth || !modalOpen) return;
-
-    console.log('handleUpdate fired:', modalOpen, inputValue);
+    if (!user?.id) return;
     setLoading(true);
-
     try {
-      if (modalOpen === 'name') {
-        await updateUser(user.id, { displayName: inputValue });
-      } else if (modalOpen === 'email') {
-        await updateEmail(user.auth, inputValue);
-        await updateUser(user.id, { email: inputValue });
-      } else if (modalOpen === 'password') {
-        await updatePassword(user.auth, inputValue);
-      }
-
-      showMessage('Updated successfully!', 'success');
-      setModalOpen(null);
+      await updateUser(user.id, { displayName: inputValue });
+      showMessage('Name updated successfully!', 'success');
+      setModalOpen(false);
     } catch (err: any) {
-      console.error('Update error:', err);
-      showMessage(err.message || 'Update failed.', 'error');
+      console.error(err);
+      showMessage(err.message || 'Failed to update name', 'error');
     } finally {
       setLoading(false);
     }
@@ -68,8 +56,8 @@ const UserProfile: React.FC = () => {
               <p>{user?.displayName || '—'}</p>
             </div>
             <Button onClick={() => {
-              setModalOpen('name');
               setInputValue(user?.displayName || '');
+              setModalOpen(true);
             }}>
               Edit
             </Button>
@@ -80,12 +68,7 @@ const UserProfile: React.FC = () => {
               <p className="font-semibold">Email</p>
               <p>{user?.email || '—'}</p>
             </div>
-            <Button onClick={() => {
-              setModalOpen('email');
-              setInputValue(user?.email || '');
-            }}>
-              Edit
-            </Button>
+            <Button disabled>—</Button>
           </div>
 
           <div className="flex justify-between items-center border-b pb-3">
@@ -93,29 +76,20 @@ const UserProfile: React.FC = () => {
               <p className="font-semibold">Password</p>
               <p>••••••••</p>
             </div>
-            <Button onClick={() => {
-              setModalOpen('password');
-              setInputValue('');
-            }}>
-              Change
-            </Button>
+            <Button disabled>—</Button>
           </div>
         </div>
 
-        <Modal
-          isOpen={modalOpen !== null}
-          onClose={() => setModalOpen(null)}
-          title={`Update ${modalOpen}`}
-        >
+        <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Update Name">
           <input
-            type={modalOpen === 'password' ? 'password' : 'text'}
+            type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder={`Enter new ${modalOpen}`}
+            placeholder="Enter new name"
             className="w-full border p-2 rounded mt-4"
           />
           <div className="flex justify-end space-x-2 mt-4">
-            <Button variant="outline" onClick={() => setModalOpen(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
             <Button onClick={handleUpdate} disabled={loading}>
               {loading ? 'Saving...' : 'Save'}
             </Button>
