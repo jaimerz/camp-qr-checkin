@@ -5,7 +5,6 @@ import { UserProvider } from './context/UserContext';
 import './index.css';
 
 import DashboardLayout from './components/layout/DashboardLayout';
-import ScrollToTop from './components/layout/ScrollToTop';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -24,7 +23,6 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <UserProvider>
       <Router>
-        <ScrollToTop />
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
