@@ -5,14 +5,22 @@ const ScrollToTop = () => {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    // Scroll immediately
-    window.scrollTo(0, 0);
-    // Scroll again after a frame to ensure full top positioning
-    const timeout = setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 10);
+    let frame = 0;
 
-    return () => clearTimeout(timeout);
+    const scroll = () => {
+      if (frame < 2) {
+        frame++;
+        requestAnimationFrame(scroll);
+      } else {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+    };
+
+    requestAnimationFrame(scroll);
+
+    return () => {
+      frame = 2; // cancel future frames if unmounted
+    };
   }, [pathname]);
 
   return null;
