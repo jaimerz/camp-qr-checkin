@@ -32,7 +32,7 @@ const SelectParticipantsModal: React.FC<Props> = ({ isOpen, onClose, participant
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Select Participants">
-      <div className="mb-2">
+      <div className="mt-4">
         <input
           type="text"
           placeholder="Search by name or church"
@@ -40,20 +40,35 @@ const SelectParticipantsModal: React.FC<Props> = ({ isOpen, onClose, participant
           onChange={(e) => setQuery(e.target.value)}
           className="border border-gray-300 rounded w-full px-3 py-1 mb-3"
         />
-        <div className="flex space-x-2 mb-2">
-          <Button onClick={() => setSelectedIds(filtered.map(p => p.id))}>Select All</Button>
-          <Button variant="outline" onClick={() => setSelectedIds([])}>Clear</Button>
+
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex space-x-2">
+            <Button onClick={() => setSelectedIds(filtered.map(p => p.id))}>Select All</Button>
+            <Button variant="outline" onClick={() => setSelectedIds([])}>Clear</Button>
+          </div>
+          <p className="text-sm text-gray-600">
+            {selectedIds.length} selected / {participants.length} total
+          </p>
         </div>
+
         <div className="max-h-[400px] overflow-y-auto space-y-1">
           {filtered.map((p) => (
-            <label key={p.id} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={selectedIds.includes(p.id)}
-                onChange={() => toggleId(p.id)}
-              />
-              <span>{p.name} – {p.church}</span>
-            </label>
+            <div
+              key={p.id}
+              className="p-3 bg-white border border-gray-200 rounded-md flex justify-between items-center hover:bg-gray-50"
+            >
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(p.id)}
+                  onChange={() => toggleId(p.id)}
+                />
+                <div>
+                  <p className="font-medium">{p.name}</p>
+                  <p className="text-sm text-gray-500">{p.church}</p>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </div>
