@@ -13,13 +13,13 @@ import {
   deleteParticipantWithLogs,
   generateDeterministicQrCode,
 } from '../utils/firebase';
-import { generateQRCodePDF } from '../utils/qrcode';
 import { Event, Participant } from '../types';
 import { doc, updateDoc, getFirestore } from 'firebase/firestore';
 import DownloadQrModal from '../components/modals/DownloadQrModal';
+import SelectParticipantsModal from '../components/modals/SelectParticipantsModal';
 
 
-  const ManageParticipants: React.FC = () => {
+const ManageParticipants: React.FC = () => {
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +48,8 @@ import DownloadQrModal from '../components/modals/DownloadQrModal';
   const matchesSearch = (p: Participant) =>
     normalize(p.name).includes(normalize(searchQuery)) ||
     normalize(p.church).includes(normalize(searchQuery));
+  const [selectModalOpen, setSelectModalOpen] = useState(false);
+  const [downloadSubset, setDownloadSubset] = useState<Participant[] | null>(null);
   
   const TagInput: React.FC<{
     tags: string[];
@@ -262,7 +264,7 @@ import DownloadQrModal from '../components/modals/DownloadQrModal';
           </CardHeader>
           <CardContent className="space-x-4">
             <Button
-              onClick={() => setDownloadModalOpen(true)}
+              onClick={() => setSelectModalOpen(true)}
               disabled={!participants.length}
             >
               <Download className="h-4 w-4 mr-2" />
@@ -441,6 +443,23 @@ import DownloadQrModal from '../components/modals/DownloadQrModal';
           </div>
         </div>
       </Modal>
+      <SelectParticipantsModal
+        isOpen={selectModalOpen}
+        onClose={() => setSelectModalOpen(false)}
+        participants={participants}
+        onSelect={(selected) => {
+          setDownloadSubset(selected);
+          setDownloadModalOpen(true);
+        }}
+      />
+      <DownloadQrModal
+        isOpen={downloadModalOpen}
+        onClose={() => {
+          setDownloadModalOpen(false);
+          setDownloadSubset(null); // reset after use
+        }}
+        participants={downloadSubset || participants}
+      />
       <Modal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)} title="Add Participant">
         <form
           onSubmit={async (e) => {
@@ -516,12 +535,7 @@ import DownloadQrModal from '../components/modals/DownloadQrModal';
             <Button type="submit">Save</Button>
           </div>
         </form>
-      </Modal>
-      <DownloadQrModal
-        isOpen={downloadModalOpen}
-        onClose={() => setDownloadModalOpen(false)}
-        participants={participants}
-      />
+      </Modal>      
     </AuthGuard>
   );
 };
