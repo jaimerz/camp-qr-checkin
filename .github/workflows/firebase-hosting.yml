@@ -1,14 +1,16 @@
-name: Deploy to Firebase Hosting
+name: Deploy to Firebase Hosting (Prod + Staging)
 
 on:
   push:
     branches:
-      - '**'  # Trigger on all branches
+      - '**'  # Deploy from all branches
 
 jobs:
-  build_and_deploy:
+  # 🔵 Production (only on main)
+  deploy_prod:
+    if: github.ref_name == 'main'
+    name: Deploy to Production
     runs-on: ubuntu-latest
-
     env:
       VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
       VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
@@ -32,10 +34,45 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Deploy to Firebase Hosting
+      - name: Deploy to Firebase Hosting (Production)
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
-          channelId: ${{ github.ref_name == 'main' && 'live' || github.ref_name }}
+          channelId: live
           projectId: camp-qr-checkin
+
+  # 🟢 Staging/Test (all branches, including main)
+  deploy_test:
+    name: Deploy to Staging/Test
+    runs-on: ubuntu-latest
+    env:
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY_TEST }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN_TEST }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID_TEST }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET_TEST }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID_TEST }}
+      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID_TEST }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Deploy to Firebase Hosting (Staging/Test)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TEST }}'
+          channelId: ${{ github.ref_name == 'main' && 'staging' || github.ref_name }}
+          projectId: camp-qr-checkin-test
