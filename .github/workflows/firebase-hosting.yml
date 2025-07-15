@@ -42,7 +42,7 @@ jobs:
           channelId: live
           projectId: camp-qr-checkin
 
-  # 🟢 Staging/Test (all branches, including main)
+  # 🟢 Staging/Test (all branches, including main).
   deploy_test:
     name: Deploy to Staging/Test
     runs-on: ubuntu-latest
