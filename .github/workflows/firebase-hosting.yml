@@ -1,4 +1,4 @@
-name: Deploy to Firebase Hosting (Prod + Staging)
+name: Deploy to Firebase Hosting (Prod + Test)
 
 on:
   push:
@@ -39,12 +39,12 @@ jobs:
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
-          channelId: live
           projectId: camp-qr-checkin
+          channelId: live
 
-  # 🟢 Staging/Test (all branches, including main).
+  # 🟢 Test environment (main = live; others = preview)
   deploy_test:
-    name: Deploy to Staging/Test
+    name: Deploy to Test
     runs-on: ubuntu-latest
     env:
       VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY_TEST }}
@@ -69,10 +69,10 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Deploy to Firebase Hosting (Staging/Test)
+      - name: Deploy to Firebase Hosting (Test)
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TEST }}'
-          channelId: ${{ github.ref_name == 'main' && 'staging' || github.ref_name }}
           projectId: camp-qr-checkin-test
+          channelId: ${{ github.ref_name == 'main' && 'live' || github.ref_name }}
