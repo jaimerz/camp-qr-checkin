@@ -3,7 +3,7 @@ name: Deploy to Firebase Hosting (Prod + Test)
 on:
   push:
     branches:
-      - '**'  # Deploy from all branches
+      - '**'  # Deploy from all branches 
 
 jobs:
   # 🔵 Production (only on main)
