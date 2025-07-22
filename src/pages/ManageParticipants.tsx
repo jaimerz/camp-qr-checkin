@@ -414,7 +414,7 @@ const ManageParticipants: React.FC = () => {
             tags={editLeaders}
             setTags={setEditLeaders}
             suggestions={leaderNames}
-            placeholder="Type name and press Enter"
+            placeholder="Leader name(s)"
           />
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => setEditModalOpen(false)}>Cancel</Button>
@@ -528,7 +528,7 @@ const ManageParticipants: React.FC = () => {
             tags={assignedLeaders}
             setTags={setAssignedLeaders}
             suggestions={leaderNames}
-            placeholder="Type name and press Enter"
+            placeholder="Leader name(s)"
           />
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => setAddModalOpen(false)}>Cancel</Button>
