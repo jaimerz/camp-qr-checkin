@@ -38,6 +38,7 @@ const ManageActivities: React.FC = () => {
       setActiveEvent(current);
       if (current) {
         const data = await getActivitiesByEvent(current.id);
+        data.sort((a, b) => a.name.localeCompare(b.name));
         setActivities(data);
       }
     };
@@ -55,6 +56,7 @@ const ManageActivities: React.FC = () => {
     try {
       await createActivity({ eventId: activeEvent.id, name, description, location });
       const updated = await getActivitiesByEvent(activeEvent.id);
+      updated.sort((a, b) => a.name.localeCompare(b.name));
       setActivities(updated);
       setName('');
       setDescription('');

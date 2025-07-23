@@ -33,6 +33,7 @@ const QrScannerPage: React.FC = () => {
       setLoading(true);
       try {
         const activitiesData = await getActivitiesByEvent(eventId);
+        activitiesData.sort((a, b) => a.name.localeCompare(b.name));
         setActivities(activitiesData);
 
         if (activitiesData.length > 0) {
