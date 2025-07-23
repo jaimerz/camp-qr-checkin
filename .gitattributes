@@ -1,0 +1,6 @@
+# Treat Office and PDF files as binary to disable diffing
+*.pptx binary
+*.ppt binary
+*.docx binary
+*.xlsx binary
+*.pdf binary
