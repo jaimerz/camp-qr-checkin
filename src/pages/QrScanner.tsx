@@ -110,14 +110,16 @@ const QrScannerPage: React.FC = () => {
     }
   };
 
-  const validateAndHandleScan = async (participantId: string, activityId: string | null) => {
+  const validateAndHandleScan = async (participantId: string, _activityId: string | null) => {
+    const activityId = selectedActivityId || null;
+
     if (!scanType) {
       setModalMessage('Please select a scan type before scanning.');
       setShowModal(true);
       return Promise.resolve(false);
     }
 
-    if (scanType === 'departure' && !selectedActivityId) {
+    if (scanType === 'departure' && !activityId) {
       setModalMessage('Please select an activity for departure.');
       setShowModal(true);
       return Promise.resolve(false);
@@ -127,7 +129,10 @@ const QrScannerPage: React.FC = () => {
   };
 
   const getParticipantInfo = async (participantId: string): Promise<Participant | null> => {
-    if (!eventId) return null;
+    if (!eventId || !scanType || (scanType === 'departure' && !selectedActivityId)) {
+      return null;
+    }
+
     try {
       return await getParticipantByQrCode(participantId, eventId);
     } catch (err) {
@@ -228,14 +233,35 @@ const QrScannerPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <QrScanner
-          activities={activities}
-          selectedActivity={selectedActivity}
-          scanType={scanType as 'departure' | 'return'}
-          onScan={validateAndHandleScan}
-          getParticipantInfo={(qrCode) => getParticipantByQrCode(qrCode, eventId!)}
-          getParticipantCurrentActivity={getCurrentActivity}
-        />
+        {/* Conditionally show scanner or prompt */}
+        {!scanType ? (
+          <Card>
+            <CardContent className="p-6 text-yellow-800">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="h-5 w-5 text-yellow-500" />
+                <p>Please select a scan type to begin scanning.</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : scanType === 'departure' && !selectedActivityId ? (
+          <Card>
+            <CardContent className="p-6 text-yellow-800">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="h-5 w-5 text-yellow-500" />
+                <p>Please select an activity before scanning departures.</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <QrScanner
+            activities={activities}
+            selectedActivity={selectedActivity}
+            scanType={scanType as 'departure' | 'return'}
+            onScan={validateAndHandleScan}
+            getParticipantInfo={(qrCode) => getParticipantByQrCode(qrCode, eventId!)}
+            getParticipantCurrentActivity={getCurrentActivity}
+          />
+        )}
 
         <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Missing Selection">
           <div className="p-4 text-gray-700">{modalMessage}</div>
