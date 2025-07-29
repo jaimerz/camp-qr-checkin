@@ -49,13 +49,13 @@ const QrScannerPage: React.FC = () => {
   }, [eventId]);
 
   const handleScan = async (participantId: string, activityId: string | null) => {
-    if (!eventId) return false;
+    if (!eventId) return Promise.resolve(false);
 
     try {
       const leaderId = user?.id;
       if (!leaderId) {
         alert('Error: unable to identify scanner.');
-        return false;
+        return Promise.resolve(false);
       }
 
       const currentActivity = await getParticipantCurrentActivity(participantId);
@@ -64,7 +64,7 @@ const QrScannerPage: React.FC = () => {
         if (currentActivity) {
           if (currentActivity.id === activityId) {
             alert('⚠️ Participant is already at this activity.');
-            return false;
+            return Promise.resolve(false);
           }
           await createActivityLog({
             eventId,
@@ -89,7 +89,7 @@ const QrScannerPage: React.FC = () => {
       if (scanType === 'return') {
         if (!currentActivity) {
           alert('⚠️ Participant is already at camp.');
-          return false;
+          return Promise.resolve(false);
         }
 
         await createActivityLog({
@@ -106,7 +106,7 @@ const QrScannerPage: React.FC = () => {
       return true;
     } catch (err) {
       console.error('Error recording scan:', err);
-      return false;
+      return Promise.resolve(false);
     }
   };
 
@@ -114,13 +114,13 @@ const QrScannerPage: React.FC = () => {
     if (!scanType) {
       setModalMessage('Please select a scan type before scanning.');
       setShowModal(true);
-      return false;
+      return Promise.resolve(false);
     }
 
     if (scanType === 'departure' && !selectedActivityId) {
       setModalMessage('Please select an activity for departure.');
       setShowModal(true);
-      return false;
+      return Promise.resolve(false);
     }
 
     return await handleScan(participantId, activityId);
