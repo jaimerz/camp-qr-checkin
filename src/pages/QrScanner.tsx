@@ -7,6 +7,7 @@ import {
   getParticipantByQrCode,
   getParticipantCurrentActivity,
   createActivityLog,
+  updateParticipantLocation,
 } from '../utils/firebase';
 import { Activity, Participant } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -14,31 +15,28 @@ import QrScanner from '../components/QrScanner';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Select from '../components/ui/Select';
 import Button from '../components/ui/Button';
-import { updateParticipantLocation } from '../utils/firebase';
+import Modal from '../components/ui/Modal';
 import { useUser } from '../context/UserContext';
 
 const QrScannerPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [selectedActivityId, setSelectedActivityId] = useState<string>('');
-  const [scanType, setScanType] = useState<'departure' | 'return'>('departure');
+  const [scanType, setScanType] = useState<'departure' | 'return' | ''>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
   const { user } = useUser();
 
   useEffect(() => {
     const fetchActivities = async () => {
       if (!eventId) return;
-
       setLoading(true);
       try {
         const activitiesData = await getActivitiesByEvent(eventId);
         activitiesData.sort((a, b) => a.name.localeCompare(b.name));
         setActivities(activitiesData);
-
-        if (activitiesData.length > 0) {
-          setSelectedActivityId(activitiesData[0].id);
-        }
       } catch (err) {
         console.error('Error fetching activities:', err);
         setError('Failed to load activities');
@@ -51,27 +49,23 @@ const QrScannerPage: React.FC = () => {
   }, [eventId]);
 
   const handleScan = async (participantId: string, activityId: string | null) => {
-    if (!eventId) return;
-  
+    if (!eventId) return Promise.resolve(false);
+
     try {
       const leaderId = user?.id;
-
       if (!leaderId) {
         alert('Error: unable to identify scanner.');
-        return false;
+        return Promise.resolve(false);
       }
-  
+
       const currentActivity = await getParticipantCurrentActivity(participantId);
-  
-      // Handle DEPARTURE
+
       if (scanType === 'departure') {
         if (currentActivity) {
           if (currentActivity.id === activityId) {
             alert('⚠️ Participant is already at this activity.');
-            return false;
+            return Promise.resolve(false);
           }
-  
-          // ✅ Log a CHANGE
           await createActivityLog({
             eventId,
             participantId,
@@ -81,7 +75,6 @@ const QrScannerPage: React.FC = () => {
             type: 'change',
           });
         } else {
-          // ✅ Log a DEPARTURE
           await createActivityLog({
             eventId,
             participantId,
@@ -90,18 +83,15 @@ const QrScannerPage: React.FC = () => {
             type: 'departure',
           });
         }
-  
-        // ✅ Update participant's current location
         await updateParticipantLocation(eventId, participantId, activityId);
       }
-  
-      // Handle RETURN
+
       if (scanType === 'return') {
         if (!currentActivity) {
           alert('⚠️ Participant is already at camp.');
-          return false;
+          return Promise.resolve(false);
         }
-  
+
         await createActivityLog({
           eventId,
           participantId,
@@ -109,21 +99,39 @@ const QrScannerPage: React.FC = () => {
           leaderId,
           type: 'return',
         });
-  
-        // ✅ Clear participant's location
+
         await updateParticipantLocation(eventId, participantId, null);
       }
-  
+
       return true;
     } catch (err) {
       console.error('Error recording scan:', err);
-      throw err;
+      return Promise.resolve(false);
     }
   };
 
-  
+  const validateAndHandleScan = async (participantId: string, _activityId: string | null) => {
+    const activityId = selectedActivityId || null;
+
+    if (!scanType) {
+      setModalMessage('Please select a scan type before scanning.');
+      setShowModal(true);
+      return Promise.resolve(false);
+    }
+
+    if (scanType === 'departure' && !activityId) {
+      setModalMessage('Please select an activity for departure.');
+      setShowModal(true);
+      return Promise.resolve(false);
+    }
+
+    return await handleScan(participantId, activityId);
+  };
+
   const getParticipantInfo = async (participantId: string): Promise<Participant | null> => {
-    if (!eventId) return null;
+    if (!eventId || !scanType || (scanType === 'departure' && !selectedActivityId)) {
+      return null;
+    }
 
     try {
       return await getParticipantByQrCode(participantId, eventId);
@@ -142,9 +150,7 @@ const QrScannerPage: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
+  if (loading) return <LoadingSpinner />;
 
   if (error) {
     return (
@@ -200,8 +206,9 @@ const QrScannerPage: React.FC = () => {
                 label="Scan Type"
                 id="scan-type"
                 value={scanType}
-                onChange={(e) => setScanType(e.target.value as 'departure' | 'return')}
+                onChange={(e) => setScanType(e.target.value as 'departure' | 'return' | '')}
                 options={[
+                  { value: '', label: '-- Select Scan Type --' },
                   { value: 'departure', label: 'Departure (Leaving Camp)' },
                   { value: 'return', label: 'Return (Coming Back to Camp)' },
                 ]}
@@ -213,24 +220,52 @@ const QrScannerPage: React.FC = () => {
                   id="activity"
                   value={selectedActivityId}
                   onChange={(e) => setSelectedActivityId(e.target.value)}
-                  options={activities.map((activity) => ({
-                    value: activity.id,
-                    label: activity.name,
-                  }))}
+                  options={[
+                    { value: '', label: '-- Select Activity --' },
+                    ...activities.map((activity) => ({
+                      value: activity.id,
+                      label: activity.name,
+                    })),
+                  ]}
                 />
               )}
             </div>
           </CardContent>
         </Card>
 
-        <QrScanner
-          activities={activities}
-          selectedActivity={selectedActivity}
-          scanType={scanType}
-          onScan={handleScan}
-          getParticipantInfo={(qrCode) => getParticipantByQrCode(qrCode, eventId!)}
-          getParticipantCurrentActivity={getCurrentActivity}
-        />
+        {/* Conditionally show scanner or prompt */}
+        {!scanType ? (
+          <Card>
+            <CardContent className="p-6 text-yellow-800">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="h-5 w-5 text-yellow-500" />
+                <p>Please select a scan type to begin scanning.</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : scanType === 'departure' && !selectedActivityId ? (
+          <Card>
+            <CardContent className="p-6 text-yellow-800">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="h-5 w-5 text-yellow-500" />
+                <p>Please select an activity before scanning departures.</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <QrScanner
+            activities={activities}
+            selectedActivity={selectedActivity}
+            scanType={scanType as 'departure' | 'return'}
+            onScan={validateAndHandleScan}
+            getParticipantInfo={(qrCode) => getParticipantByQrCode(qrCode, eventId!)}
+            getParticipantCurrentActivity={getCurrentActivity}
+          />
+        )}
+
+        <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Missing Selection">
+          <div className="p-4 text-gray-700">{modalMessage}</div>
+        </Modal>
       </div>
     </AuthGuard>
   );
