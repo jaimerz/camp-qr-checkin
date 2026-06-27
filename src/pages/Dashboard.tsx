@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Users, MapPin, BarChart, Activity, QrCode } from 'lucide-react';
+import { Calendar, Users, BarChart, Activity, QrCode } from 'lucide-react';
 import { getEvents } from '../utils/firebase';
 import { Event } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
@@ -33,6 +33,9 @@ const Dashboard: React.FC = () => {
     .filter((event) => event.active)
     .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())[0];
   const activeEventId = activeEvent?.id;
+  const activeEvents = events
+    .filter((event) => event.active)
+    .sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
 
   if (userLoading || loading) {
     return <LoadingSpinner />;
@@ -143,10 +146,10 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Recent events */}
-        <h2 className="text-lg font-semibold text-gray-900 mt-8">Events</h2>
-        {events.length > 0 ? (
+        <h2 className="text-lg font-semibold text-gray-900 mt-8">Active Events</h2>
+        {activeEvents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {events.map((event) => (
+            {activeEvents.map((event) => (
               <Link to={`/events/${event.id}`} key={event.id}>
                 <Card className="h-full transition-transform hover:shadow-md hover:-translate-y-1">
                   <CardContent className="p-6">
@@ -169,9 +172,9 @@ const Dashboard: React.FC = () => {
             <CardContent className="p-6">
               <div className="text-center py-8">
                 <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Events Found</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Events Found</h3>
                 <p className="text-gray-500 mb-6">
-                  There are no events created yet. Create your first event to get started.
+                  There are no active events right now. Activate an event from the Events page to show it here.
                 </p>
                 {user?.role === 'admin' && (
                   <Link to="/events/new">
