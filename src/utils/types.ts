@@ -13,3 +13,11 @@ export type QRCodePDFOptions = {
   spacingY: number;
   qrSize: number;
 };
+
+export type QRCodeZipOptions = {
+  qrColor: string;
+  background: 'white' | 'transparent';
+  size: number;
+  nameColor: string;
+  nameSize: number;
+};

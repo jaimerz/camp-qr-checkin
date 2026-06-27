@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { defaultQRCodePDFOptions } from '../../utils/pdfConfig';
-import { QRCodePDFOptions } from '../../utils/types';
+import { QRCodePDFOptions, QRCodeZipOptions } from '../../utils/types';
 import { generateQRCodePDF } from '../../utils/qrcode';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import { saveAs } from 'file-saver';
 import { generateQRCodeZip } from '../../utils/generateQRCodeZip';
+import { Participant } from '../../types';
 
   type Props = {
     isOpen: boolean;
@@ -13,15 +14,34 @@ import { generateQRCodeZip } from '../../utils/generateQRCodeZip';
     participants: Participant[];
   };
 
+const defaultQRCodeZipOptions: QRCodeZipOptions = {
+  qrColor: '#000000',
+  background: 'white',
+  size: 300,
+  nameColor: '#000000',
+  nameSize: 24,
+};
+
   const DownloadQrModal: React.FC<Props> = ({ isOpen, onClose, participants }) => {
   const [options, setOptions] = useState<QRCodePDFOptions>(defaultQRCodePDFOptions);
-  const defaultQRCodeZipOptions = {
-    qrColor: '#000000',
-    background: 'white' as 'white' | 'transparent',
-    size: 300,
-  };
   const [tab, setTab] = useState<'pdf' | 'zip'>('pdf');
   const [zipOptions, setZipOptions] = useState(defaultQRCodeZipOptions);
+  const [zipNameOverrides, setZipNameOverrides] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!isOpen) {
+      setZipNameOverrides({});
+      setZipOptions(defaultQRCodeZipOptions);
+      return;
+    }
+
+    setOptions(defaultQRCodePDFOptions);
+    setZipOptions(defaultQRCodeZipOptions);
+    setZipNameOverrides(
+      Object.fromEntries(participants.map((participant) => [participant.id, participant.name]))
+    );
+    setTab('pdf');
+  }, [isOpen, participants]);
 
   const handleDownload = async () => {
     try {
@@ -158,40 +178,84 @@ import { generateQRCodeZip } from '../../utils/generateQRCodeZip';
       
       {tab === 'zip' && (
         <div className="space-y-4 mt-4">
-          <label className="block">
-            QR Code Color:
-            <input
-              type="color"
-              value={zipOptions.qrColor}
-              onChange={(e) => setZipOptions({ ...zipOptions, qrColor: e.target.value })}
-              className="w-full border p-1 rounded mt-1"
-            />
-          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <label className="block">
+              QR Code Color:
+              <input
+                type="color"
+                value={zipOptions.qrColor}
+                onChange={(e) => setZipOptions({ ...zipOptions, qrColor: e.target.value })}
+                className="w-full border p-1 rounded mt-1"
+              />
+            </label>
 
-          <label className="block">
-            Background:
-            <select
-              value={zipOptions.background}
-              onChange={(e) =>
-                setZipOptions({ ...zipOptions, background: e.target.value as 'white' | 'transparent' })
-              }
-              className="border p-1 rounded w-full"
-            >
-              <option value="white">White</option>
-              <option value="transparent">Transparent</option>
-            </select>
-          </label>
+            <label className="block">
+              Name Color:
+              <input
+                type="color"
+                value={zipOptions.nameColor}
+                onChange={(e) => setZipOptions({ ...zipOptions, nameColor: e.target.value })}
+                className="w-full border p-1 rounded mt-1"
+              />
+            </label>
 
-          <label className="block">
-            Image Size (px):
-            <input
-              type="number"
-              min={100}
-              value={zipOptions.size}
-              onChange={(e) => setZipOptions({ ...zipOptions, size: parseInt(e.target.value) })}
-              className="border p-1 rounded w-full"
-            />
-          </label>
+            <label className="block">
+              Background:
+              <select
+                value={zipOptions.background}
+                onChange={(e) =>
+                  setZipOptions({ ...zipOptions, background: e.target.value as 'white' | 'transparent' })
+                }
+                className="border p-1 rounded w-full"
+              >
+                <option value="white">White</option>
+                <option value="transparent">Transparent</option>
+              </select>
+            </label>
+
+            <label className="block">
+              Name Size (px):
+              <input
+                type="number"
+                min={12}
+                max={72}
+                value={zipOptions.nameSize}
+                onChange={(e) => setZipOptions({ ...zipOptions, nameSize: parseInt(e.target.value) || 24 })}
+                className="border p-1 rounded w-full"
+              />
+            </label>
+
+            <label className="block col-span-2">
+              Image Size (px):
+              <input
+                type="number"
+                min={100}
+                value={zipOptions.size}
+                onChange={(e) => setZipOptions({ ...zipOptions, size: parseInt(e.target.value) || 300 })}
+                className="border p-1 rounded w-full"
+              />
+            </label>
+          </div>
+
+          <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+            <div className="text-sm font-medium text-gray-700">Export Names</div>
+            {participants.map((participant) => (
+              <label key={participant.id} className="block">
+                <span className="text-sm text-gray-600">{participant.name}</span>
+                <input
+                  type="text"
+                  value={zipNameOverrides[participant.id] ?? participant.name}
+                  onChange={(e) =>
+                    setZipNameOverrides({
+                      ...zipNameOverrides,
+                      [participant.id]: e.target.value,
+                    })
+                  }
+                  className="mt-1 w-full border p-2 rounded"
+                />
+              </label>
+            ))}
+          </div>
 
           <div className="flex justify-start space-x-2 mt-4">
             <Button
@@ -203,8 +267,16 @@ import { generateQRCodeZip } from '../../utils/generateQRCodeZip';
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={() => generateQRCodeZip(participants, zipOptions)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setZipNameOverrides({});
+                onClose();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={() => generateQRCodeZip(participants, zipOptions, zipNameOverrides)}>
               Download ZIP
             </Button>
           </div>
