@@ -2,9 +2,25 @@ import Papa from 'papaparse';
 import { CsvParticipant, Participant } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
+function normalizeWhitespace(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function toTitleCase(value: string): string {
+  return normalizeWhitespace(value)
+    .toLowerCase()
+    .replace(/\b([a-z])/g, (_, letter: string) => letter.toUpperCase());
+}
+
 export async function parseParticipantsCsv(file: File): Promise<CsvParticipant[]> {
+  const rawCsv = await file.text();
+  const cleanedCsv = rawCsv
+    .split(/\r?\n/)
+    .filter((line) => !/^[\s,]*$/.test(line))
+    .join('\n');
+
   return new Promise((resolve, reject) => {
-    Papa.parse(file, {
+    Papa.parse(cleanedCsv, {
       header: true,
       skipEmptyLines: true,
       transformHeader: (header) => header.trim().toLowerCase(),
@@ -15,22 +31,30 @@ export async function parseParticipantsCsv(file: File): Promise<CsvParticipant[]
         }
         
         try {
-          const participants: CsvParticipant[] = results.data.map((row: any) => {
+          const cleanedRows = results.data.filter((row: any) =>
+            Object.values(row).some((value) => String(value ?? '').trim() !== '')
+          );
+
+          const participants: CsvParticipant[] = cleanedRows.map((row: any) => {
             // Validate required fields
-            if (!row.name || !row.church || !row.type) {
+            const name = String(row.name ?? '').trim();
+            const church = String(row.church ?? '').trim();
+            const type = String(row.type ?? '').trim().toLowerCase();
+
+            if (!name || !church || !type) {
               throw new Error('Missing required fields in CSV');
             }
             
             // Validate participant type
-            if (row.type !== 'student' && row.type !== 'leader') {
+            if (type !== 'student' && type !== 'leader') {
               throw new Error(`Invalid participant type: ${row.type}. Must be 'student' or 'leader'`);
             }
             
             return {
-              name: row.name.trim(),
-              church: row.church.trim(),
-              type: row.type.trim() as 'student' | 'leader',
-              assignedLeaders: row.assignedleaders ? row.assignedleaders.trim() : '',
+              name: toTitleCase(name),
+              church,
+              type: type as 'student' | 'leader',
+              assignedLeaders: row.assignedleaders ? String(row.assignedleaders).trim() : '',
             };
           });
           
