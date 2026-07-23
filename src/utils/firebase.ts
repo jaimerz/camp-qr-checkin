@@ -46,8 +46,51 @@ export const deleteParticipantWithLogs = async (eventId: string, participantId: 
   );
   const logsSnapshot = await getDocs(logsQuery);
 
+  const workshopRegistrationsQuery = query(
+    collection(db, 'events', eventId, 'workshopRegistrations'),
+    where('participantId', '==', participantId)
+  );
+  const workshopRegistrationsSnapshot = await getDocs(workshopRegistrationsQuery);
+
   const batch = writeBatch(db);
   logsSnapshot.forEach((doc) => batch.delete(doc.ref));
+
+  const workshopCountAdjustments = new Map<string, { ref: ReturnType<typeof doc>; decrementBy: number }>();
+
+  for (const registrationDoc of workshopRegistrationsSnapshot.docs) {
+    const registrationData = registrationDoc.data() as {
+      workshopId: string;
+      dateKey: string;
+    };
+
+    batch.delete(registrationDoc.ref);
+
+    const countId = buildWorkshopDailyCountId(registrationData.workshopId, registrationData.dateKey);
+    const countRef = doc(db, 'events', eventId, 'workshopDailyCounts', countId);
+    const existing = workshopCountAdjustments.get(countId);
+
+    if (existing) {
+      existing.decrementBy += 1;
+    } else {
+      workshopCountAdjustments.set(countId, { ref: countRef, decrementBy: 1 });
+    }
+  }
+
+  for (const { ref, decrementBy } of workshopCountAdjustments.values()) {
+    const countSnapshot = await getDoc(ref);
+
+    if (!countSnapshot.exists()) {
+      continue;
+    }
+
+    const currentCount = Number(countSnapshot.data().count || 0);
+
+    if (currentCount <= decrementBy) {
+      batch.delete(ref);
+    } else {
+      batch.update(ref, { count: currentCount - decrementBy });
+    }
+  }
 
   // Delete participant
   const participantRef = doc(db, `events/${eventId}/participants/${participantId}`);
@@ -226,6 +269,27 @@ export const deleteEventWithCascade = async (eventId: string) => {
   await Promise.all(
     participantsSnapshot.docs.map((docSnap) =>
       deleteDoc(doc(db, `events/${eventId}/participants`, docSnap.id))
+    )
+  );
+
+  const workshopsSnapshot = await getDocs(collection(db, 'events', eventId, 'workshops'));
+  await Promise.all(
+    workshopsSnapshot.docs.map((docSnap) =>
+      deleteDoc(doc(db, 'events', eventId, 'workshops', docSnap.id))
+    )
+  );
+
+  const workshopRegistrationsSnapshot = await getDocs(collection(db, 'events', eventId, 'workshopRegistrations'));
+  await Promise.all(
+    workshopRegistrationsSnapshot.docs.map((docSnap) =>
+      deleteDoc(doc(db, 'events', eventId, 'workshopRegistrations', docSnap.id))
+    )
+  );
+
+  const workshopDailyCountsSnapshot = await getDocs(collection(db, 'events', eventId, 'workshopDailyCounts'));
+  await Promise.all(
+    workshopDailyCountsSnapshot.docs.map((docSnap) =>
+      deleteDoc(doc(db, 'events', eventId, 'workshopDailyCounts', docSnap.id))
     )
   );
 
