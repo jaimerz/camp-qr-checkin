@@ -47,6 +47,7 @@ const WorkshopRegistrations: React.FC = () => {
   const [submittingWorkshopId, setSubmittingWorkshopId] = useState<string | null>(null);
   const [deregisteringId, setDeregisteringId] = useState<string | null>(null);
   const [registrationSearchQuery, setRegistrationSearchQuery] = useState('');
+  const setupMessageCount = Number(Boolean(selectedParticipant)) + Number(Boolean(selectedParticipantRegistration));
 
   useEffect(() => {
     let unsubscribeWorkshops: (() => void) | undefined;
@@ -207,7 +208,7 @@ const WorkshopRegistrations: React.FC = () => {
             <CardHeader>
               <CardTitle>Registration Setup</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 pb-24">
+            <CardContent className={`space-y-4 ${setupMessageCount > 0 ? 'pb-4' : 'pb-2'}`}>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Workshop date</label>
