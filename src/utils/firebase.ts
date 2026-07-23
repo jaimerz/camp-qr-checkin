@@ -14,9 +14,12 @@ import {
   Timestamp,
   writeBatch,
   addDoc,
-  serverTimestamp 
+  serverTimestamp,
+  onSnapshot,
+  runTransaction
 } from 'firebase/firestore';
-import { User, Participant, Activity, ActivityLog, Event } from '../types';
+import { User, Participant, Activity, ActivityLog, Event, Workshop, WorkshopRegistration, WorkshopDailyCount } from '../types';
+import { formatDateKey, isDateWithinRange } from './helpers';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -696,6 +699,372 @@ export async function deleteActivity(eventId: string, activityId: string) {
 export async function updateActivity(activityId: string, updates: Partial<Activity>) {
   const ref = doc(db, 'activities', activityId);
   await updateDoc(ref, updates);
+}
+
+// Workshop related functions
+
+export async function createWorkshop(eventId: string, workshop: Omit<Workshop, 'id' | 'createdAt'>) {
+  const workshopsRef = collection(db, 'events', eventId, 'workshops');
+  const workshopRef = doc(workshopsRef);
+  const newWorkshop: Workshop = {
+    ...workshop,
+    id: workshopRef.id,
+    createdAt: new Date(),
+  };
+
+  await setDoc(workshopRef, newWorkshop);
+  return newWorkshop;
+}
+
+export async function updateWorkshop(eventId: string, workshopId: string, updates: Partial<Workshop>) {
+  const workshopRef = doc(db, 'events', eventId, 'workshops', workshopId);
+  await updateDoc(workshopRef, updates);
+}
+
+export async function getWorkshopsByEvent(eventId: string): Promise<Workshop[]> {
+  const snapshot = await getDocs(collection(db, 'events', eventId, 'workshops'));
+  const workshops: Workshop[] = [];
+
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data() as Omit<Workshop, 'availableFrom' | 'availableTo' | 'createdAt'> & {
+      availableFrom: Timestamp;
+      availableTo: Timestamp;
+      createdAt: Timestamp;
+    };
+
+    workshops.push({
+      id: docSnap.id,
+      ...data,
+      availableFrom: data.availableFrom.toDate(),
+      availableTo: data.availableTo.toDate(),
+      createdAt: data.createdAt.toDate(),
+    });
+  });
+
+  return workshops;
+}
+
+export function subscribeToWorkshopsByEvent(
+  eventId: string,
+  callback: (workshops: Workshop[]) => void
+) {
+  return onSnapshot(collection(db, 'events', eventId, 'workshops'), (snapshot) => {
+    const workshops: Workshop[] = snapshot.docs.map((docSnap) => {
+      const data = docSnap.data() as Omit<Workshop, 'availableFrom' | 'availableTo' | 'createdAt'> & {
+        availableFrom: Timestamp;
+        availableTo: Timestamp;
+        createdAt: Timestamp;
+      };
+
+      return {
+        id: docSnap.id,
+        ...data,
+        availableFrom: data.availableFrom.toDate(),
+        availableTo: data.availableTo.toDate(),
+        createdAt: data.createdAt.toDate(),
+      };
+    });
+
+    callback(workshops);
+  });
+}
+
+export async function deleteWorkshop(eventId: string, workshopId: string) {
+  const countsSnapshot = await getDocs(collection(db, 'events', eventId, 'workshopDailyCounts'));
+  const registrationsSnapshot = await getDocs(collection(db, 'events', eventId, 'workshopRegistrations'));
+
+  const batch = writeBatch(db);
+
+  countsSnapshot.docs.forEach((docSnap) => {
+    if (docSnap.data().workshopId === workshopId) {
+      batch.delete(docSnap.ref);
+    }
+  });
+
+  registrationsSnapshot.docs.forEach((docSnap) => {
+    if (docSnap.data().workshopId === workshopId) {
+      batch.delete(docSnap.ref);
+    }
+  });
+
+  batch.delete(doc(db, 'events', eventId, 'workshops', workshopId));
+  await batch.commit();
+}
+
+export function subscribeToWorkshopRegistrationsByDate(
+  eventId: string,
+  dateKey: string,
+  callback: (registrations: WorkshopRegistration[]) => void
+) {
+  const registrationsQuery = query(
+    collection(db, 'events', eventId, 'workshopRegistrations'),
+    where('dateKey', '==', dateKey)
+  );
+
+  return onSnapshot(registrationsQuery, (snapshot) => {
+    const registrations: WorkshopRegistration[] = snapshot.docs.map((docSnap) => {
+      const data = docSnap.data() as Omit<WorkshopRegistration, 'registeredAt'> & {
+        registeredAt: Timestamp;
+      };
+
+      return {
+        id: docSnap.id,
+        ...data,
+        registeredAt: data.registeredAt.toDate(),
+      };
+    });
+
+    callback(registrations);
+  });
+}
+
+export function subscribeToWorkshopDailyCountsByDate(
+  eventId: string,
+  dateKey: string,
+  callback: (counts: WorkshopDailyCount[]) => void
+) {
+  const countsQuery = query(
+    collection(db, 'events', eventId, 'workshopDailyCounts'),
+    where('dateKey', '==', dateKey)
+  );
+
+  return onSnapshot(countsQuery, (snapshot) => {
+    const counts: WorkshopDailyCount[] = snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...(docSnap.data() as Omit<WorkshopDailyCount, 'id'>),
+    }));
+
+    callback(counts);
+  });
+}
+
+function buildWorkshopRegistrationId(dateKey: string, participantId: string) {
+  return `${dateKey}__${participantId}`;
+}
+
+function buildWorkshopDailyCountId(workshopId: string, dateKey: string) {
+  return `${workshopId}__${dateKey}`;
+}
+
+export async function registerParticipantForWorkshop({
+  eventId,
+  workshopId,
+  participant,
+  registeredBy,
+  dateKey,
+}: {
+  eventId: string;
+  workshopId: string;
+  participant: Participant;
+  registeredBy: string;
+  dateKey: string;
+}) {
+  const workshopRef = doc(db, 'events', eventId, 'workshops', workshopId);
+  const registrationRef = doc(
+    db,
+    'events',
+    eventId,
+    'workshopRegistrations',
+    buildWorkshopRegistrationId(dateKey, participant.id)
+  );
+
+  await runTransaction(db, async (transaction) => {
+    const workshopSnap = await transaction.get(workshopRef);
+
+    if (!workshopSnap.exists()) {
+      throw new Error('Workshop not found.');
+    }
+
+    const workshopData = workshopSnap.data() as Omit<Workshop, 'availableFrom' | 'availableTo' | 'createdAt'> & {
+      availableFrom: Timestamp;
+      availableTo: Timestamp;
+      createdAt: Timestamp;
+    };
+
+    const workshop: Workshop = {
+      id: workshopSnap.id,
+      ...workshopData,
+      availableFrom: workshopData.availableFrom.toDate(),
+      availableTo: workshopData.availableTo.toDate(),
+      createdAt: workshopData.createdAt.toDate(),
+    };
+
+    const selectedDate = new Date(`${dateKey}T00:00:00`);
+
+    if (!workshop.active || !isDateWithinRange(selectedDate, workshop.availableFrom, workshop.availableTo)) {
+      throw new Error('This workshop is not available on the selected date.');
+    }
+
+    const existingRegistrationSnap = await transaction.get(registrationRef);
+    if (existingRegistrationSnap.exists()) {
+      const existing = existingRegistrationSnap.data() as WorkshopRegistration;
+      if (existing.workshopId === workshopId) {
+        throw new Error('Participant is already registered for this workshop on that date.');
+      }
+      throw new Error(`Participant is already registered for ${existing.workshopName} on that date.`);
+    }
+
+    const countRef = doc(
+      db,
+      'events',
+      eventId,
+      'workshopDailyCounts',
+      buildWorkshopDailyCountId(workshopId, dateKey)
+    );
+    const countSnap = await transaction.get(countRef);
+    const currentCount = countSnap.exists() ? (countSnap.data().count as number) : 0;
+
+    if (currentCount >= workshop.maxRegistrationsPerDay) {
+      throw new Error('This workshop just reached its maximum registrations.');
+    }
+
+    transaction.set(registrationRef, {
+      workshopId: workshop.id,
+      workshopName: workshop.name,
+      participantId: participant.id,
+      participantName: participant.name,
+      participantChurch: participant.church,
+      dateKey,
+      registeredBy,
+      registeredAt: serverTimestamp(),
+    });
+
+    transaction.set(countRef, {
+      workshopId: workshop.id,
+      workshopName: workshop.name,
+      dateKey,
+      count: currentCount + 1,
+      maxRegistrations: workshop.maxRegistrationsPerDay,
+    });
+  });
+}
+
+export async function deregisterParticipantFromWorkshop({
+  eventId,
+  registration,
+}: {
+  eventId: string;
+  registration: WorkshopRegistration;
+}) {
+  const registrationRef = doc(db, 'events', eventId, 'workshopRegistrations', registration.id);
+  const countRef = doc(
+    db,
+    'events',
+    eventId,
+    'workshopDailyCounts',
+    buildWorkshopDailyCountId(registration.workshopId, registration.dateKey)
+  );
+
+  await runTransaction(db, async (transaction) => {
+    const registrationSnap = await transaction.get(registrationRef);
+    if (!registrationSnap.exists()) {
+      throw new Error('Registration no longer exists.');
+    }
+
+    const countSnap = await transaction.get(countRef);
+    const currentCount = countSnap.exists() ? (countSnap.data().count as number) : 0;
+
+    transaction.delete(registrationRef);
+
+    if (currentCount <= 1) {
+      transaction.delete(countRef);
+    } else {
+      transaction.update(countRef, { count: currentCount - 1 });
+    }
+  });
+}
+
+export async function clearWorkshopRegistrations(eventId: string) {
+  const registrationsSnapshot = await getDocs(collection(db, 'events', eventId, 'workshopRegistrations'));
+  const countsSnapshot = await getDocs(collection(db, 'events', eventId, 'workshopDailyCounts'));
+
+  let batch = writeBatch(db);
+  let operationCount = 0;
+
+  const commitBatch = async () => {
+    if (operationCount === 0) {
+      return;
+    }
+
+    await batch.commit();
+    batch = writeBatch(db);
+    operationCount = 0;
+  };
+
+  for (const docSnap of registrationsSnapshot.docs) {
+    batch.delete(docSnap.ref);
+    operationCount++;
+    if (operationCount >= 450) {
+      await commitBatch();
+    }
+  }
+
+  for (const docSnap of countsSnapshot.docs) {
+    batch.delete(docSnap.ref);
+    operationCount++;
+    if (operationCount >= 450) {
+      await commitBatch();
+    }
+  }
+
+  await commitBatch();
+}
+
+export function getDefaultWorkshopDateKey(workshops: Workshop[], today = new Date()) {
+  const upcomingKeys = Array.from(
+    new Set(
+      workshops.flatMap((workshop) => {
+        if (!workshop.active) {
+          return [];
+        }
+        const start = workshop.availableFrom;
+        const end = workshop.availableTo;
+        const keys: string[] = [];
+        for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
+          const current = new Date(cursor);
+          if (current >= new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
+            keys.push(formatDateKey(current));
+          }
+        }
+        return keys;
+      })
+    )
+  ).sort();
+
+  return upcomingKeys[0] || '';
+}
+
+export async function getWorkshopRegistrationsByDate(eventId: string, dateKey: string): Promise<WorkshopRegistration[]> {
+  const registrationsQuery = query(
+    collection(db, 'events', eventId, 'workshopRegistrations'),
+    where('dateKey', '==', dateKey)
+  );
+  const snapshot = await getDocs(registrationsQuery);
+
+  return snapshot.docs.map((docSnap) => {
+    const data = docSnap.data() as Omit<WorkshopRegistration, 'registeredAt'> & {
+      registeredAt: Timestamp;
+    };
+
+    return {
+      id: docSnap.id,
+      ...data,
+      registeredAt: data.registeredAt.toDate(),
+    };
+  });
+}
+
+export async function getWorkshopDailyCountsByDate(eventId: string, dateKey: string): Promise<WorkshopDailyCount[]> {
+  const countsQuery = query(
+    collection(db, 'events', eventId, 'workshopDailyCounts'),
+    where('dateKey', '==', dateKey)
+  );
+  const snapshot = await getDocs(countsQuery);
+
+  return snapshot.docs.map((docSnap) => ({
+    id: docSnap.id,
+    ...(docSnap.data() as Omit<WorkshopDailyCount, 'id'>),
+  }));
 }
 
 // User related functions

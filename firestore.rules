@@ -1,0 +1,83 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+
+    function isLeader() {
+      return isAuthenticated() && getUserRole() == 'leader';
+    }
+
+    function canManageWorkshopRegistrations() {
+      return isAdmin() || isLeader();
+    }
+
+    match /users/{userId} {
+      allow create: if isAuthenticated();
+      allow get: if request.auth.uid == userId;
+      allow list: if isAdmin();
+      allow read: if (isAuthenticated() && request.auth.uid == userId) || isAdmin() || isLeader();
+      allow update: if (isAuthenticated() && request.auth.uid == userId &&
+                        request.resource.data.keys().hasOnly(['displayName', 'email']))
+                    || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /events/{eventId} {
+      allow read: if isAdmin() || isLeader();
+      allow create, update, delete: if isAdmin();
+
+      match /participants/{participantId} {
+        allow read: if isAdmin() || isLeader();
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin() ||
+          (isLeader() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['location']));
+      }
+
+      match /workshops/{workshopId} {
+        allow read: if isAdmin() || isLeader();
+        allow create, update, delete: if isAdmin();
+      }
+
+      match /workshopRegistrations/{registrationId} {
+        allow read: if isAdmin() || isLeader();
+        allow create, delete: if canManageWorkshopRegistrations();
+        allow update: if false;
+      }
+
+      match /workshopDailyCounts/{countId} {
+        allow read: if isAdmin() || isLeader();
+        allow create, update, delete: if canManageWorkshopRegistrations();
+      }
+    }
+
+    match /activities/{activityId} {
+      allow read: if isAdmin() || isLeader();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /activityLogs/{logId} {
+      allow read: if isAdmin() || isLeader();
+      allow create: if isAdmin() || isLeader();
+      allow delete: if isAdmin();
+      allow update: if false;
+    }
+
+    match /debug_logs/{logId} {
+      allow create: if true;
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+  }
+}

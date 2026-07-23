@@ -30,6 +30,8 @@ const Header: React.FC = () => {
     .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())[0];
   const activeEventId = activeEvent?.id;
   const scanQrLink = activeEventId ? `/scan/${activeEventId}` : '#';
+  const workshopRegistrationLink = activeEventId ? `/events/${activeEventId}/workshops/register` : '#';
+  const workshopManagementLink = activeEventId ? `/events/${activeEventId}/workshops/manage` : '#';
   const isScanDisabled = !activeEventId;
 
   const handleLogout = async () => {
@@ -72,6 +74,14 @@ const Header: React.FC = () => {
               >
                 Scan QR
               </Link>
+              <Link
+                to={workshopRegistrationLink}
+                className={`border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  isScanDisabled ? 'pointer-events-none opacity-50' : ''
+                }`}
+              >
+                Workshops
+              </Link>
               {isAdmin && (
                 <>
                   <Link
@@ -85,6 +95,14 @@ const Header: React.FC = () => {
                     className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                   >
                     Activities
+                  </Link>
+                  <Link
+                    to={workshopManagementLink}
+                    className={`border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      isScanDisabled ? 'pointer-events-none opacity-50' : ''
+                    }`}
+                  >
+                    Workshop Management
                   </Link>
                   <Link
                     to="/reports"
@@ -210,6 +228,17 @@ const Header: React.FC = () => {
             >
               Scan QR
             </Link>
+            <Link
+              to={workshopRegistrationLink}
+              className={`text-gray-600 hover:bg-gray-50 hover:text-gray-900 block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium ${
+                isScanDisabled ? 'pointer-events-none opacity-50' : ''
+              }`}
+              onClick={() => {
+                if (activeEventId) setIsMenuOpen(false);
+              }}
+            >
+              Workshops
+            </Link>
             {isAdmin && (
               <>
                 <Link
@@ -225,6 +254,17 @@ const Header: React.FC = () => {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Activities
+                </Link>
+                <Link
+                  to={workshopManagementLink}
+                  className={`text-gray-600 hover:bg-gray-50 hover:text-gray-900 block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium ${
+                    isScanDisabled ? 'pointer-events-none opacity-50' : ''
+                  }`}
+                  onClick={() => {
+                    if (activeEventId) setIsMenuOpen(false);
+                  }}
+                >
+                  Workshop Management
                 </Link>
                 <Link
                   to="/reports"

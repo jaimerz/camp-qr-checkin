@@ -15,10 +15,12 @@ import ParticipantDetail from './pages/ParticipantDetail';
 import ManageParticipants from './pages/ManageParticipants';
 import ManageEvents from './pages/ManageEvents';
 import ManageActivities from './pages/ManageActivities';
+import ManageWorkshops from './pages/ManageWorkshops';
 import Reports from './pages/Reports';
 import ResetPassword from './pages/ResetPassword';
 import ManageUsers from './pages/ManageUsers';
 import UserProfile from './pages/UserProfile';
+import WorkshopRegistrations from './pages/WorkshopRegistrations';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -34,6 +36,8 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/events" element={<ManageEvents />} />
             <Route path="/events/:eventId" element={<EventDetail />} />
             <Route path="/scan/:eventId" element={<QrScanner />} />
+            <Route path="/events/:eventId/workshops/register" element={<WorkshopRegistrations />} />
+            <Route path="/events/:eventId/workshops/manage" element={<ManageWorkshops />} />
             <Route path="/participants/import/:eventId" element={<ParticipantImport />} />
             <Route path="/events/:eventId/participants/:qrCode" element={<ParticipantDetail />} />
             <Route path="/activities" element={<ManageActivities />} />
