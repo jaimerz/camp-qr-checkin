@@ -15,7 +15,7 @@ import {
   updateWorkshop,
 } from '../utils/firebase';
 import { Event, Workshop } from '../types';
-import { formatDate } from '../utils/helpers';
+import { CURRENT_DATE_REFERENCE, formatDate, formatDateKey } from '../utils/helpers';
 
 const toDateInputValue = (date: Date) => {
   const year = date.getFullYear();
@@ -46,6 +46,7 @@ const ManageWorkshops: React.FC = () => {
   const [confirmText, setConfirmText] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
+  const todayKey = formatDateKey(CURRENT_DATE_REFERENCE);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -254,13 +255,16 @@ const ManageWorkshops: React.FC = () => {
               value={editAvailableFrom}
               onChange={(event) => setEditAvailableFrom(event.target.value)}
               className="w-full rounded border p-2"
+              min={todayKey}
             />
             <input
               type="date"
               value={editAvailableTo}
               onChange={(event) => setEditAvailableTo(event.target.value)}
               className="w-full rounded border p-2"
+              min={editAvailableFrom || todayKey}
             />
+            <label className="block text-sm font-medium text-gray-700">Daily registration limit</label>
             <input
               type="number"
               min="1"
@@ -325,20 +329,6 @@ const ManageWorkshops: React.FC = () => {
           <>
             <Card>
               <CardHeader>
-                <CardTitle>Workshop Registration Cleanup</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-gray-600">
-                  Delete all workshop registrations for <span className="font-medium">{activeEvent.name}</span> to reset testing data.
-                </p>
-                <Button variant="danger" onClick={handleClearRegistrations}>
-                  Delete All Workshop Registrations
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
                 <CardTitle>Add Workshop</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -357,6 +347,7 @@ const ManageWorkshops: React.FC = () => {
                       value={availableFrom}
                       onChange={(event) => setAvailableFrom(event.target.value)}
                       className="w-full rounded border p-2"
+                      min={todayKey}
                     />
                   </div>
                   <div className="space-y-2">
@@ -366,17 +357,21 @@ const ManageWorkshops: React.FC = () => {
                       value={availableTo}
                       onChange={(event) => setAvailableTo(event.target.value)}
                       className="w-full rounded border p-2"
+                      min={availableFrom || todayKey}
                     />
                   </div>
                 </div>
-                <input
-                  type="number"
-                  min="1"
-                  value={maxRegistrationsPerDay}
-                  onChange={(event) => setMaxRegistrationsPerDay(event.target.value)}
-                  placeholder="Max registrations per day"
-                  className="w-full rounded border p-2"
-                />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Daily registration limit</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={maxRegistrationsPerDay}
+                    onChange={(event) => setMaxRegistrationsPerDay(event.target.value)}
+                    placeholder="Max registrations per day"
+                    className="w-full rounded border p-2"
+                  />
+                </div>
                 <Button onClick={handleAdd}>Add Workshop</Button>
               </CardContent>
             </Card>
@@ -457,6 +452,20 @@ const ManageWorkshops: React.FC = () => {
                 ) : (
                   <p className="text-sm text-gray-600">No workshops found.</p>
                 )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Workshop Registration Cleanup</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-gray-600">
+                  Delete all workshop registrations for <span className="font-medium">{activeEvent.name}</span> to reset testing data.
+                </p>
+                <Button variant="danger" onClick={handleClearRegistrations}>
+                  Delete All Workshop Registrations
+                </Button>
               </CardContent>
             </Card>
           </>

@@ -46,6 +46,7 @@ const WorkshopRegistrations: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [submittingWorkshopId, setSubmittingWorkshopId] = useState<string | null>(null);
   const [deregisteringId, setDeregisteringId] = useState<string | null>(null);
+  const [registrationSearchQuery, setRegistrationSearchQuery] = useState('');
 
   useEffect(() => {
     let unsubscribeWorkshops: (() => void) | undefined;
@@ -159,6 +160,18 @@ const WorkshopRegistrations: React.FC = () => {
   }, {});
 
   const selectedDate = selectedDateKey ? parseDateKey(selectedDateKey) : null;
+  const filteredRegistrations = registrations.filter((registration) => {
+    const query = registrationSearchQuery.trim().toLowerCase();
+    if (!query) {
+      return true;
+    }
+
+    return (
+      registration.participantName.toLowerCase().includes(query) ||
+      registration.participantChurch.toLowerCase().includes(query) ||
+      registration.workshopName.toLowerCase().includes(query)
+    );
+  });
 
   const refreshSelectedDate = async () => {
     if (!activeEvent || !selectedDateKey) {
@@ -190,11 +203,11 @@ const WorkshopRegistrations: React.FC = () => {
       label: 'Register',
       content: (
         <div className="space-y-6">
-          <Card>
+          <Card className="overflow-visible">
             <CardHeader>
               <CardTitle>Registration Setup</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pb-24">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Workshop date</label>
@@ -273,7 +286,7 @@ const WorkshopRegistrations: React.FC = () => {
             </CardContent>
           </Card>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {workshops.map((workshop) => {
               const availableOnSelectedDate = selectedDate ? isDateWithinRange(selectedDate, workshop.availableFrom, workshop.availableTo) : false;
               const count = countMap[workshop.id]?.count || 0;
@@ -296,16 +309,16 @@ const WorkshopRegistrations: React.FC = () => {
               );
 
               return (
-                <Card key={workshop.id} className="h-full">
-                  <CardHeader>
-                    <CardTitle>{workshop.name}</CardTitle>
+                <Card key={workshop.id}>
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-base">
+                      {workshop.name} ({count} / {workshop.maxRegistrationsPerDay})
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-1 text-sm text-gray-600">
-                      <p>{formatDate(workshop.availableFrom)} - {formatDate(workshop.availableTo)}</p>
-                      <p>Capacity for selected date: {count} / {workshop.maxRegistrationsPerDay}</p>
-                      <p>Status: {disabledReason || 'Available'}</p>
-                    </div>
+                  <CardContent className="space-y-3">
+                    {disabledReason && (
+                      <p className="text-sm text-gray-500">{disabledReason}</p>
+                    )}
                     <Button
                       fullWidth
                       disabled={!canRegister}
@@ -352,18 +365,27 @@ const WorkshopRegistrations: React.FC = () => {
         <div className="space-y-6">
           <Card>
             <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <CardTitle>
-                {selectedDate ? `Registrations for ${formatDate(selectedDate)}` : 'Registrations'}
-              </CardTitle>
+              <div className="space-y-3">
+                <CardTitle>
+                  {selectedDate ? `Registrations for ${formatDate(selectedDate)}` : 'Registrations'}
+                </CardTitle>
+                <input
+                  type="text"
+                  value={registrationSearchQuery}
+                  onChange={(event) => setRegistrationSearchQuery(event.target.value)}
+                  placeholder="Search participant, church, or workshop"
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm md:w-80"
+                />
+              </div>
               <Button variant="outline" onClick={refreshSelectedDate} isLoading={refreshing}>
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh
               </Button>
             </CardHeader>
             <CardContent>
-              {registrations.length > 0 ? (
+              {filteredRegistrations.length > 0 ? (
                 <div className="space-y-2">
-                  {registrations.map((registration) => (
+                  {filteredRegistrations.map((registration) => (
                     <div
                       key={registration.id}
                       className="flex items-center justify-between rounded-md border border-gray-200 bg-white p-3 hover:bg-gray-50"
@@ -403,6 +425,8 @@ const WorkshopRegistrations: React.FC = () => {
                     </div>
                   ))}
                 </div>
+              ) : registrations.length > 0 ? (
+                <p className="text-sm text-gray-600">No registrations match the current search.</p>
               ) : (
                 <p className="text-sm text-gray-600">No registrations found for the selected date.</p>
               )}
