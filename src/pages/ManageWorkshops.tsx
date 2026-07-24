@@ -257,14 +257,14 @@ const ManageWorkshops: React.FC = () => {
               type="date"
               value={editAvailableFrom}
               onChange={(event) => setEditAvailableFrom(event.target.value)}
-              className="w-full min-w-0 rounded border p-2"
+              className="block w-full max-w-full min-w-0 box-border rounded border p-2 text-sm"
               min={todayKey}
             />
             <input
               type="date"
               value={editAvailableTo}
               onChange={(event) => setEditAvailableTo(event.target.value)}
-              className="w-full min-w-0 rounded border p-2"
+              className="block w-full max-w-full min-w-0 box-border rounded border p-2 text-sm"
               min={editAvailableFrom || todayKey}
             />
             <label className="block text-sm font-medium text-gray-700">Daily registration limit</label>
@@ -343,23 +343,23 @@ const ManageWorkshops: React.FC = () => {
                   className="w-full rounded border p-2"
                 />
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
+                  <div className="min-w-0 space-y-2">
                     <label className="text-sm font-medium text-gray-700">Available from</label>
                     <input
                       type="date"
                       value={availableFrom}
                       onChange={(event) => setAvailableFrom(event.target.value)}
-                      className="w-full min-w-0 rounded border p-2"
+                      className="block w-full max-w-full min-w-0 box-border rounded border p-2 text-sm"
                       min={todayKey}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="min-w-0 space-y-2">
                     <label className="text-sm font-medium text-gray-700">Available to</label>
                     <input
                       type="date"
                       value={availableTo}
                       onChange={(event) => setAvailableTo(event.target.value)}
-                      className="w-full min-w-0 rounded border p-2"
+                      className="block w-full max-w-full min-w-0 box-border rounded border p-2 text-sm"
                       min={availableFrom || todayKey}
                     />
                   </div>

@@ -183,6 +183,24 @@ const WorkshopRegistrations: React.FC = () => {
       registration.workshopName.toLowerCase().includes(query)
     );
   });
+  const workshopGroups = Object.values(
+    filteredRegistrations.reduce<Record<string, { workshopName: string; registrations: WorkshopRegistration[] }>>((accumulator, registration) => {
+      if (!accumulator[registration.workshopId]) {
+        accumulator[registration.workshopId] = {
+          workshopName: registration.workshopName,
+          registrations: [],
+        };
+      }
+
+      accumulator[registration.workshopId].registrations.push(registration);
+      return accumulator;
+    }, {})
+  )
+    .map((group) => ({
+      workshopName: group.workshopName,
+      registrations: [...group.registrations].sort((a, b) => a.participantName.localeCompare(b.participantName)),
+    }))
+    .sort((a, b) => a.workshopName.localeCompare(b.workshopName));
 
   const refreshSelectedDate = async () => {
     if (!activeEvent || !selectedDateKey) {
@@ -394,46 +412,55 @@ const WorkshopRegistrations: React.FC = () => {
               </Button>
             </CardHeader>
             <CardContent>
-              {filteredRegistrations.length > 0 ? (
-                <div className="space-y-2">
-                  {filteredRegistrations.map((registration) => (
-                    <div
-                      key={registration.id}
-                      className="flex items-center justify-between rounded-md border border-gray-200 bg-white p-3 hover:bg-gray-50"
-                    >
-                      <div>
-                        <p className="font-medium">{registration.participantName}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">
-                          <span>{registration.participantChurch}</span>
-                          <Badge variant="primary">{registration.workshopName}</Badge>
+              {workshopGroups.length > 0 ? (
+                <div className="space-y-4">
+                  {workshopGroups.map((group) => (
+                    <div key={group.workshopName} className="rounded-md border border-gray-200 bg-white">
+                      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-gray-900">{group.workshopName}</h3>
+                          <Badge variant="primary">{group.registrations.length}</Badge>
                         </div>
                       </div>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        isLoading={deregisteringId === registration.id}
-                        onClick={async () => {
-                          if (!activeEvent) {
-                            return;
-                          }
+                      <div className="space-y-2 p-3">
+                        {group.registrations.map((registration) => (
+                          <div
+                            key={registration.id}
+                            className="flex items-center justify-between rounded-md border border-gray-200 bg-gray-50 p-3 hover:bg-gray-100"
+                          >
+                            <div>
+                              <p className="font-medium">{registration.participantName}</p>
+                              <p className="text-sm text-gray-500">{registration.participantChurch}</p>
+                            </div>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              isLoading={deregisteringId === registration.id}
+                              onClick={async () => {
+                                if (!activeEvent) {
+                                  return;
+                                }
 
-                          setDeregisteringId(registration.id);
-                          try {
-                            await deregisterParticipantFromWorkshop({
-                              eventId: activeEvent.id,
-                              registration,
-                            });
-                            showMessage(`Removed ${registration.participantName} from ${registration.workshopName}.`, 'success');
-                          } catch (error) {
-                            console.error('Error deregistering participant:', error);
-                            showMessage(error instanceof Error ? error.message : 'Failed to deregister participant.', 'error');
-                          } finally {
-                            setDeregisteringId(null);
-                          }
-                        }}
-                      >
-                        De-register
-                      </Button>
+                                setDeregisteringId(registration.id);
+                                try {
+                                  await deregisterParticipantFromWorkshop({
+                                    eventId: activeEvent.id,
+                                    registration,
+                                  });
+                                  showMessage(`Removed ${registration.participantName} from ${registration.workshopName}.`, 'success');
+                                } catch (error) {
+                                  console.error('Error deregistering participant:', error);
+                                  showMessage(error instanceof Error ? error.message : 'Failed to deregister participant.', 'error');
+                                } finally {
+                                  setDeregisteringId(null);
+                                }
+                              }}
+                            >
+                              De-register
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
