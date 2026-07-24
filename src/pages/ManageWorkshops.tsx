@@ -70,8 +70,8 @@ const ManageWorkshops: React.FC = () => {
         setActiveEvent(event);
 
         unsubscribe = subscribeToWorkshopsByEvent(event.id, (liveWorkshops) => {
-            const sorted = [...liveWorkshops].sort((a, b) => a.name.localeCompare(b.name));
-            setWorkshops(sorted);
+          const sorted = [...liveWorkshops].sort((a, b) => a.name.localeCompare(b.name));
+          setWorkshops(sorted);
         });
       } catch (error) {
         console.error('Error loading workshops:', error);
@@ -257,14 +257,14 @@ const ManageWorkshops: React.FC = () => {
               type="date"
               value={editAvailableFrom}
               onChange={(event) => setEditAvailableFrom(event.target.value)}
-              className="w-full rounded border p-2"
+              className="w-full min-w-0 rounded border p-2"
               min={todayKey}
             />
             <input
               type="date"
               value={editAvailableTo}
               onChange={(event) => setEditAvailableTo(event.target.value)}
-              className="w-full rounded border p-2"
+              className="w-full min-w-0 rounded border p-2"
               min={editAvailableFrom || todayKey}
             />
             <label className="block text-sm font-medium text-gray-700">Daily registration limit</label>
@@ -332,46 +332,6 @@ const ManageWorkshops: React.FC = () => {
           <>
             <Card>
               <CardHeader>
-                <CardTitle>Registration Date Mode</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-gray-600">
-                  Current mode: <span className="font-medium">{isDateSelectionLocked ? 'Locked to current date' : 'Date can be selected manually'}</span>
-                </p>
-                <Button
-                  variant={isDateSelectionLocked ? 'outline' : 'secondary'}
-                  disabled={workshops.length === 0}
-                  onClick={async () => {
-                    if (!activeEvent || workshops.length === 0) {
-                      return;
-                    }
-
-                    try {
-                      await setWorkshopDateLockForEvent(activeEvent.id, !isDateSelectionLocked);
-                      showMessage(
-                        isDateSelectionLocked
-                          ? 'Workshop registration date can now be selected manually.'
-                          : 'Workshop registration date is now locked to the current date.',
-                        'success'
-                      );
-                    } catch (error) {
-                      console.error('Error updating workshop date mode:', error);
-                      showMessage('Failed to update the registration date mode.', 'error');
-                    }
-                  }}
-                >
-                  {isDateSelectionLocked ? 'Allow Manual Date Selection' : 'Lock Registration to Current Date'}
-                </Button>
-                {workshops.length === 0 && (
-                  <p className="text-sm text-gray-500">
-                    Create at least one workshop before changing the registration date mode.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
                 <CardTitle>Add Workshop</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -389,7 +349,7 @@ const ManageWorkshops: React.FC = () => {
                       type="date"
                       value={availableFrom}
                       onChange={(event) => setAvailableFrom(event.target.value)}
-                      className="w-full rounded border p-2"
+                      className="w-full min-w-0 rounded border p-2"
                       min={todayKey}
                     />
                   </div>
@@ -399,7 +359,7 @@ const ManageWorkshops: React.FC = () => {
                       type="date"
                       value={availableTo}
                       onChange={(event) => setAvailableTo(event.target.value)}
-                      className="w-full rounded border p-2"
+                      className="w-full min-w-0 rounded border p-2"
                       min={availableFrom || todayKey}
                     />
                   </div>
@@ -494,6 +454,46 @@ const ManageWorkshops: React.FC = () => {
                   </div>
                 ) : (
                   <p className="text-sm text-gray-600">No workshops found.</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Registration Date Mode</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-gray-600">
+                  Current mode: <span className="font-medium">{isDateSelectionLocked ? 'Locked to current date' : 'Date can be selected manually'}</span>
+                </p>
+                <Button
+                  variant={isDateSelectionLocked ? 'outline' : 'success'}
+                  disabled={workshops.length === 0}
+                  onClick={async () => {
+                    if (!activeEvent || workshops.length === 0) {
+                      return;
+                    }
+
+                    try {
+                      await setWorkshopDateLockForEvent(activeEvent.id, !isDateSelectionLocked);
+                      showMessage(
+                        isDateSelectionLocked
+                          ? 'Workshop registration date can now be selected manually.'
+                          : 'Workshop registration date is now locked to the current date.',
+                        'success'
+                      );
+                    } catch (error) {
+                      console.error('Error updating workshop date mode:', error);
+                      showMessage('Failed to update the registration date mode.', 'error');
+                    }
+                  }}
+                >
+                  {isDateSelectionLocked ? 'Allow Manual Date Selection' : 'Lock Registration to Current Date'}
+                </Button>
+                {workshops.length === 0 && (
+                  <p className="text-sm text-gray-500">
+                    Create at least one workshop before changing the registration date mode.
+                  </p>
                 )}
               </CardContent>
             </Card>

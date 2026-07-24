@@ -3,6 +3,7 @@ import { RefreshCw } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import AuthGuard from '../components/AuthGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Tabs from '../components/ui/Tabs';
@@ -217,7 +218,7 @@ const WorkshopRegistrations: React.FC = () => {
             <CardHeader>
               <CardTitle>Registration Setup</CardTitle>
             </CardHeader>
-            <CardContent className={`space-y-4 ${setupMessageCount > 0 ? 'pb-4' : 'pb-2'}`}>
+            <CardContent className={`space-y-4 ${setupMessageCount > 0 ? 'pb-4' : 'pb-4'}`}>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Workshop date</label>
@@ -402,9 +403,10 @@ const WorkshopRegistrations: React.FC = () => {
                     >
                       <div>
                         <p className="font-medium">{registration.participantName}</p>
-                        <p className="text-sm text-gray-500">
-                          {registration.participantChurch} | {registration.workshopName}
-                        </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                          <span>{registration.participantChurch}</span>
+                          <Badge variant="primary">{registration.workshopName}</Badge>
+                        </div>
                       </div>
                       <Button
                         variant="danger"
