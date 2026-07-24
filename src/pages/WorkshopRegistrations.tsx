@@ -465,17 +465,6 @@ const WorkshopRegistrations: React.FC = () => {
           </Card>
         ) : (
           <>
-            <Card>
-              <CardHeader>
-                <CardTitle>{activeEvent.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600">
-                  Participants are loaded once for this page session, while workshop availability stays live for the selected date.
-                </p>
-              </CardContent>
-            </Card>
-
             {workshops.length === 0 ? (
               <Card>
                 <CardContent className="p-6">
