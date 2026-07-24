@@ -953,6 +953,7 @@ export async function registerParticipantForWorkshop({
   dateKey: string;
 }) {
   const workshopRef = doc(db, 'events', eventId, 'workshops', workshopId);
+  const participantRef = doc(db, 'events', eventId, 'participants', participant.id);
   const registrationRef = doc(
     db,
     'events',
@@ -963,9 +964,14 @@ export async function registerParticipantForWorkshop({
 
   await runTransaction(db, async (transaction) => {
     const workshopSnap = await transaction.get(workshopRef);
+    const participantSnap = await transaction.get(participantRef);
 
     if (!workshopSnap.exists()) {
       throw new Error('Workshop not found.');
+    }
+
+    if (!participantSnap.exists()) {
+      throw new Error('Participant no longer exists for this event.');
     }
 
     const workshopData = workshopSnap.data() as Omit<Workshop, 'availableFrom' | 'availableTo' | 'createdAt'> & {
@@ -1055,15 +1061,26 @@ export async function deregisterParticipantFromWorkshop({
       throw new Error('Registration no longer exists.');
     }
 
-    const countSnap = await transaction.get(countRef);
+    const liveRegistration = registrationSnap.data() as Omit<WorkshopRegistration, 'registeredAt'> & {
+      registeredAt: Timestamp;
+    };
+    const liveCountRef = doc(
+      db,
+      'events',
+      eventId,
+      'workshopDailyCounts',
+      buildWorkshopDailyCountId(liveRegistration.workshopId, liveRegistration.dateKey)
+    );
+
+    const countSnap = await transaction.get(liveCountRef);
     const currentCount = countSnap.exists() ? (countSnap.data().count as number) : 0;
 
     transaction.delete(registrationRef);
 
     if (currentCount <= 1) {
-      transaction.delete(countRef);
+      transaction.delete(liveCountRef);
     } else {
-      transaction.update(countRef, { count: currentCount - 1 });
+      transaction.update(liveCountRef, { count: currentCount - 1 });
     }
   });
 }
