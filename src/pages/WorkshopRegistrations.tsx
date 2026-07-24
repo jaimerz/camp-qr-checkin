@@ -259,7 +259,7 @@ const WorkshopRegistrations: React.FC = () => {
                             onMouseDown={(event) => {
                               event.preventDefault();
                               setSelectedParticipantId(participant.id);
-                              setParticipantQuery(`${participant.name} (${participant.church})`);
+                              setParticipantQuery('');
                               setShowParticipantSuggestions(false);
                             }}
                           >
