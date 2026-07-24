@@ -51,6 +51,7 @@ export interface Workshop {
   availableFrom: Date;
   availableTo: Date;
   maxRegistrationsPerDay: number;
+  lockRegistrationDateToToday: boolean;
   active: boolean;
   createdAt: Date;
 }

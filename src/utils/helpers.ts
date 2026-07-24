@@ -2,7 +2,7 @@ import { UserRole, Workshop } from '../types';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-export const CURRENT_DATE_REFERENCE = new Date('2026-07-23T12:00:00');
+export const CURRENT_DATE_REFERENCE = new Date('2026-07-24T12:00:00');
 
 // Combine Tailwind classes safely
 export function cn(...inputs: ClassValue[]) {

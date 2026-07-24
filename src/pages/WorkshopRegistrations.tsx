@@ -21,6 +21,7 @@ import { Event, Participant, Workshop, WorkshopDailyCount, WorkshopRegistration 
 import {
   CURRENT_DATE_REFERENCE,
   formatDate,
+  formatDateKey,
   getUpcomingWorkshopDateKeys,
   isDateWithinRange,
   parseDateKey,
@@ -99,8 +100,16 @@ const WorkshopRegistrations: React.FC = () => {
   };
 
   const dateOptions = getUpcomingWorkshopDateKeys(workshops, CURRENT_DATE_REFERENCE);
+  const currentDateKey = formatDateKey(CURRENT_DATE_REFERENCE);
+  const isDateSelectionLocked = workshops.length > 0 && workshops.every((workshop) => workshop.lockRegistrationDateToToday);
+  const visibleDateOptions = isDateSelectionLocked ? [currentDateKey] : dateOptions;
 
   useEffect(() => {
+    if (isDateSelectionLocked) {
+      setSelectedDateKey(currentDateKey);
+      return;
+    }
+
     if (!dateOptions.length) {
       setSelectedDateKey('');
       return;
@@ -109,7 +118,7 @@ const WorkshopRegistrations: React.FC = () => {
     if (!selectedDateKey || !dateOptions.includes(selectedDateKey)) {
       setSelectedDateKey(dateOptions[0]);
     }
-  }, [dateOptions, selectedDateKey]);
+  }, [currentDateKey, dateOptions, isDateSelectionLocked, selectedDateKey]);
 
   useEffect(() => {
     if (!activeEvent || !selectedDateKey) {
@@ -216,12 +225,12 @@ const WorkshopRegistrations: React.FC = () => {
                     value={selectedDateKey}
                     onChange={(event) => setSelectedDateKey(event.target.value)}
                     className="w-full rounded border border-gray-300 p-2"
-                    disabled={!dateOptions.length}
+                    disabled={isDateSelectionLocked || visibleDateOptions.length === 0}
                   >
-                    {dateOptions.length === 0 ? (
+                    {visibleDateOptions.length === 0 ? (
                       <option value="">No current or future workshop dates</option>
                     ) : (
-                      dateOptions.map((dateKey) => (
+                      visibleDateOptions.map((dateKey) => (
                         <option key={dateKey} value={dateKey}>
                           {formatDate(parseDateKey(dateKey))}
                         </option>

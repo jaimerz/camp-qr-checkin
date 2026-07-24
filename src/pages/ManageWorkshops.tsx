@@ -11,6 +11,7 @@ import {
   createWorkshop,
   deleteWorkshop,
   getEventById,
+  setWorkshopDateLockForEvent,
   subscribeToWorkshopsByEvent,
   updateWorkshop,
 } from '../utils/firebase';
@@ -47,6 +48,7 @@ const ManageWorkshops: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
   const todayKey = formatDateKey(CURRENT_DATE_REFERENCE);
+  const isDateSelectionLocked = workshops.length > 0 && workshops.every((workshop) => workshop.lockRegistrationDateToToday);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -140,6 +142,7 @@ const ManageWorkshops: React.FC = () => {
         availableFrom: fromDate,
         availableTo: toDate,
         maxRegistrationsPerDay: Number(maxRegistrationsPerDay),
+        lockRegistrationDateToToday: isDateSelectionLocked,
         active: true,
       });
       resetCreateForm();
@@ -329,6 +332,46 @@ const ManageWorkshops: React.FC = () => {
           <>
             <Card>
               <CardHeader>
+                <CardTitle>Registration Date Mode</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-gray-600">
+                  Current mode: <span className="font-medium">{isDateSelectionLocked ? 'Locked to current date' : 'Date can be selected manually'}</span>
+                </p>
+                <Button
+                  variant={isDateSelectionLocked ? 'outline' : 'secondary'}
+                  disabled={workshops.length === 0}
+                  onClick={async () => {
+                    if (!activeEvent || workshops.length === 0) {
+                      return;
+                    }
+
+                    try {
+                      await setWorkshopDateLockForEvent(activeEvent.id, !isDateSelectionLocked);
+                      showMessage(
+                        isDateSelectionLocked
+                          ? 'Workshop registration date can now be selected manually.'
+                          : 'Workshop registration date is now locked to the current date.',
+                        'success'
+                      );
+                    } catch (error) {
+                      console.error('Error updating workshop date mode:', error);
+                      showMessage('Failed to update the registration date mode.', 'error');
+                    }
+                  }}
+                >
+                  {isDateSelectionLocked ? 'Allow Manual Date Selection' : 'Lock Registration to Current Date'}
+                </Button>
+                {workshops.length === 0 && (
+                  <p className="text-sm text-gray-500">
+                    Create at least one workshop before changing the registration date mode.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle>Add Workshop</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -436,7 +479,7 @@ const ManageWorkshops: React.FC = () => {
                               {formatDate(workshop.availableFrom)} - {formatDate(workshop.availableTo)}
                             </p>
                             <p className="text-sm text-gray-500">
-                              Max per day: {workshop.maxRegistrationsPerDay} | Status: {workshop.active ? 'Active' : 'Inactive'}
+                              Max per day: {workshop.maxRegistrationsPerDay} | Status: {workshop.active ? 'Active' : 'Inactive'} | Date mode: {workshop.lockRegistrationDateToToday ? 'Current date only' : 'Manual'}
                             </p>
                           </div>
                         </div>

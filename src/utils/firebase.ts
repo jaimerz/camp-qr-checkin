@@ -785,6 +785,33 @@ export async function updateWorkshop(eventId: string, workshopId: string, update
   await updateDoc(workshopRef, updates);
 }
 
+export async function setWorkshopDateLockForEvent(eventId: string, locked: boolean) {
+  const workshopsSnapshot = await getDocs(collection(db, 'events', eventId, 'workshops'));
+  let batch = writeBatch(db);
+  let operationCount = 0;
+
+  const commitBatch = async () => {
+    if (operationCount === 0) {
+      return;
+    }
+
+    await batch.commit();
+    batch = writeBatch(db);
+    operationCount = 0;
+  };
+
+  for (const workshopDoc of workshopsSnapshot.docs) {
+    batch.update(workshopDoc.ref, { lockRegistrationDateToToday: locked });
+    operationCount++;
+
+    if (operationCount >= 450) {
+      await commitBatch();
+    }
+  }
+
+  await commitBatch();
+}
+
 export async function getWorkshopsByEvent(eventId: string): Promise<Workshop[]> {
   const snapshot = await getDocs(collection(db, 'events', eventId, 'workshops'));
   const workshops: Workshop[] = [];
@@ -801,6 +828,7 @@ export async function getWorkshopsByEvent(eventId: string): Promise<Workshop[]> 
       ...data,
       availableFrom: data.availableFrom.toDate(),
       availableTo: data.availableTo.toDate(),
+      lockRegistrationDateToToday: Boolean(data.lockRegistrationDateToToday),
       createdAt: data.createdAt.toDate(),
     });
   });
@@ -825,6 +853,7 @@ export function subscribeToWorkshopsByEvent(
         ...data,
         availableFrom: data.availableFrom.toDate(),
         availableTo: data.availableTo.toDate(),
+        lockRegistrationDateToToday: Boolean(data.lockRegistrationDateToToday),
         createdAt: data.createdAt.toDate(),
       };
     });
@@ -950,6 +979,7 @@ export async function registerParticipantForWorkshop({
       ...workshopData,
       availableFrom: workshopData.availableFrom.toDate(),
       availableTo: workshopData.availableTo.toDate(),
+      lockRegistrationDateToToday: Boolean(workshopData.lockRegistrationDateToToday),
       createdAt: workshopData.createdAt.toDate(),
     };
 
