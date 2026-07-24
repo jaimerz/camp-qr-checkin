@@ -47,7 +47,6 @@ const WorkshopRegistrations: React.FC = () => {
   const [submittingWorkshopId, setSubmittingWorkshopId] = useState<string | null>(null);
   const [deregisteringId, setDeregisteringId] = useState<string | null>(null);
   const [registrationSearchQuery, setRegistrationSearchQuery] = useState('');
-  const setupMessageCount = Number(Boolean(selectedParticipant)) + Number(Boolean(selectedParticipantRegistration));
 
   useEffect(() => {
     let unsubscribeWorkshops: (() => void) | undefined;
@@ -142,6 +141,7 @@ const WorkshopRegistrations: React.FC = () => {
   const selectedParticipantRegistration = registrations.find(
     (registration) => registration.participantId === selectedParticipantId
   ) || null;
+  const setupMessageCount = Number(Boolean(selectedParticipant)) + Number(Boolean(selectedParticipantRegistration));
 
   const filteredParticipants = participants.filter((participant) => {
     const query = participantQuery.trim().toLowerCase();
