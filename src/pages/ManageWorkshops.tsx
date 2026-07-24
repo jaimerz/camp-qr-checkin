@@ -467,7 +467,7 @@ const ManageWorkshops: React.FC = () => {
                   Current mode: <span className="font-medium">{isDateSelectionLocked ? 'Locked to current date' : 'Date can be selected manually'}</span>
                 </p>
                 <Button
-                  variant={isDateSelectionLocked ? 'outline' : 'success'}
+                  variant={isDateSelectionLocked ? 'outline' : 'primary'}
                   disabled={workshops.length === 0}
                   onClick={async () => {
                     if (!activeEvent || workshops.length === 0) {
