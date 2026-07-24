@@ -417,10 +417,9 @@ const WorkshopRegistrations: React.FC = () => {
                   {workshopGroups.map((group) => (
                     <div key={group.workshopName} className="rounded-md border border-gray-200 bg-white">
                       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-gray-900">{group.workshopName}</h3>
-                          <Badge variant="primary">{group.registrations.length}</Badge>
-                        </div>
+                        <h3 className="font-medium text-gray-900">
+                          {group.workshopName} ({group.registrations.length} / {group.registrations.length})
+                        </h3>
                       </div>
                       <div className="space-y-2 p-3">
                         {group.registrations.map((registration) => (
