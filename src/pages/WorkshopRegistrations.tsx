@@ -183,10 +183,15 @@ const WorkshopRegistrations: React.FC = () => {
       registration.workshopName.toLowerCase().includes(query)
     );
   });
+  const totalRegistrationsByWorkshop = registrations.reduce<Record<string, number>>((accumulator, registration) => {
+    accumulator[registration.workshopId] = (accumulator[registration.workshopId] || 0) + 1;
+    return accumulator;
+  }, {});
   const workshopGroups = Object.values(
     filteredRegistrations.reduce<Record<string, { workshopName: string; registrations: WorkshopRegistration[] }>>((accumulator, registration) => {
       if (!accumulator[registration.workshopId]) {
         accumulator[registration.workshopId] = {
+          workshopId: registration.workshopId,
           workshopName: registration.workshopName,
           registrations: [],
         };
@@ -197,6 +202,7 @@ const WorkshopRegistrations: React.FC = () => {
     }, {})
   )
     .map((group) => ({
+      workshopId: group.workshopId,
       workshopName: group.workshopName,
       registrations: [...group.registrations].sort((a, b) => a.participantName.localeCompare(b.participantName)),
     }))
@@ -418,7 +424,7 @@ const WorkshopRegistrations: React.FC = () => {
                     <div key={group.workshopName} className="rounded-md border border-gray-200 bg-white">
                       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
                         <h3 className="font-medium text-gray-900">
-                          {group.workshopName} ({group.registrations.length} / {group.registrations.length})
+                          {group.workshopName} ({group.registrations.length} / {totalRegistrationsByWorkshop[group.workshopId] || 0})
                         </h3>
                       </div>
                       <div className="space-y-2 p-3">
