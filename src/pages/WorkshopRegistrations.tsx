@@ -20,9 +20,9 @@ import {
 } from '../utils/firebase';
 import { Event, Participant, Workshop, WorkshopDailyCount, WorkshopRegistration } from '../types';
 import {
-  CURRENT_DATE_REFERENCE,
-  formatDate,
+  formatDateWithWeekday,
   formatDateKey,
+  getCurrentDateReference,
   getUpcomingWorkshopDateKeys,
   isDateWithinRange,
   parseDateKey,
@@ -100,8 +100,9 @@ const WorkshopRegistrations: React.FC = () => {
     setTimeout(() => setMessage(null), 3500);
   };
 
-  const dateOptions = getUpcomingWorkshopDateKeys(workshops, CURRENT_DATE_REFERENCE);
-  const currentDateKey = formatDateKey(CURRENT_DATE_REFERENCE);
+  const currentDateReference = getCurrentDateReference();
+  const dateOptions = getUpcomingWorkshopDateKeys(workshops, currentDateReference);
+  const currentDateKey = formatDateKey(currentDateReference);
   const isDateSelectionLocked = workshops.length > 0 && workshops.every((workshop) => workshop.lockRegistrationDateToToday);
   const visibleDateOptions = isDateSelectionLocked ? [currentDateKey] : dateOptions;
 
@@ -246,22 +247,45 @@ const WorkshopRegistrations: React.FC = () => {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Workshop date</label>
-                  <select
-                    value={selectedDateKey}
-                    onChange={(event) => setSelectedDateKey(event.target.value)}
-                    className="w-full rounded border border-gray-300 p-2"
-                    disabled={isDateSelectionLocked || visibleDateOptions.length === 0}
-                  >
-                    {visibleDateOptions.length === 0 ? (
-                      <option value="">No current or future workshop dates</option>
-                    ) : (
-                      visibleDateOptions.map((dateKey) => (
-                        <option key={dateKey} value={dateKey}>
-                          {formatDate(parseDateKey(dateKey))}
-                        </option>
-                      ))
-                    )}
-                  </select>
+                  {visibleDateOptions.length === 0 ? (
+                    <div className="rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-500">
+                      No current or future workshop dates
+                    </div>
+                  ) : (
+                    <div className="space-y-2 rounded-md border border-gray-200 bg-white p-3">
+                      {visibleDateOptions.map((dateKey) => {
+                        const isSelected = selectedDateKey === dateKey;
+                        return (
+                          <label
+                            key={dateKey}
+                            className={`flex cursor-pointer items-center justify-between rounded-md border px-3 py-2 transition-colors ${
+                              isSelected
+                                ? 'border-teal-500 bg-teal-50'
+                                : 'border-gray-200 bg-white hover:bg-gray-50'
+                            } ${isDateSelectionLocked ? 'cursor-default' : ''}`}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <input
+                                type="radio"
+                                name="workshop-date"
+                                value={dateKey}
+                                checked={isSelected}
+                                onChange={(event) => setSelectedDateKey(event.target.value)}
+                                disabled={isDateSelectionLocked}
+                                className="h-4 w-4 border-gray-300 text-teal-600 focus:ring-teal-500"
+                              />
+                              <span className="text-sm font-medium text-gray-900">
+                                {formatDateWithWeekday(parseDateKey(dateKey))}
+                              </span>
+                            </div>
+                            {isSelected && (
+                              <span className="text-xs font-medium text-teal-700">Selected</span>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Participant</label>
@@ -315,7 +339,7 @@ const WorkshopRegistrations: React.FC = () => {
 
               {selectedParticipantRegistration && (
                 <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                  This participant is already registered for <span className="font-medium">{selectedParticipantRegistration.workshopName}</span> on {selectedDate ? formatDate(selectedDate) : selectedDateKey}.
+                  This participant is already registered for <span className="font-medium">{selectedParticipantRegistration.workshopName}</span> on {selectedDate ? formatDateWithWeekday(selectedDate) : selectedDateKey}.
                 </div>
               )}
             </CardContent>
@@ -402,7 +426,7 @@ const WorkshopRegistrations: React.FC = () => {
             <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="space-y-3">
                 <CardTitle>
-                  {selectedDate ? `Registrations for ${formatDate(selectedDate)}` : 'Registrations'}
+                  {selectedDate ? `Registrations for ${formatDateWithWeekday(selectedDate)}` : 'Registrations'}
                 </CardTitle>
                 <input
                   type="text"
