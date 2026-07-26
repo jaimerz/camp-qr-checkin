@@ -102,7 +102,7 @@ const Header: React.FC = () => {
                       isScanDisabled ? 'pointer-events-none opacity-50' : ''
                     }`}
                   >
-                    Workshop Management
+                    Manage Workshops
                   </Link>
                   <Link
                     to="/reports"
@@ -264,7 +264,7 @@ const Header: React.FC = () => {
                     if (activeEventId) setIsMenuOpen(false);
                   }}
                 >
-                  Workshop Management
+                  Manage Workshops
                 </Link>
                 <Link
                   to="/reports"

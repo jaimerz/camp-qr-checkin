@@ -129,7 +129,7 @@ const Dashboard: React.FC = () => {
                 <Card className="h-full transition-transform hover:shadow-md hover:-translate-y-1">
                   <CardContent className="flex flex-col items-center justify-center p-6">
                     <Ticket className="mb-4 h-12 w-12 text-rose-500" />
-                    <h3 className="font-medium text-gray-900">Workshop Management</h3>
+                    <h3 className="font-medium text-gray-900">Manage Workshops</h3>
                     <p className="mt-2 text-center text-sm text-gray-500">
                       Configure workshops, dates, and daily capacities
                     </p>
