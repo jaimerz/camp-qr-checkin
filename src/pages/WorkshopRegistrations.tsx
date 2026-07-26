@@ -3,7 +3,6 @@ import { RefreshCw } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import AuthGuard from '../components/AuthGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Tabs from '../components/ui/Tabs';
@@ -12,9 +11,11 @@ import {
   getEventById,
   getParticipantsByEvent,
   getWorkshopDailyCountsByDate,
+  getWorkshopRegistrationsByEvent,
   getWorkshopRegistrationsByDate,
   registerParticipantForWorkshop,
   subscribeToWorkshopDailyCountsByDate,
+  subscribeToWorkshopRegistrationsByEvent,
   subscribeToWorkshopRegistrationsByDate,
   subscribeToWorkshopsByEvent,
 } from '../utils/firebase';
@@ -35,7 +36,8 @@ const WorkshopRegistrations: React.FC = () => {
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
-  const [registrations, setRegistrations] = useState<WorkshopRegistration[]>([]);
+  const [selectedDateRegistrations, setSelectedDateRegistrations] = useState<WorkshopRegistration[]>([]);
+  const [allRegistrations, setAllRegistrations] = useState<WorkshopRegistration[]>([]);
   const [counts, setCounts] = useState<WorkshopDailyCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDateKey, setSelectedDateKey] = useState('');
@@ -52,6 +54,7 @@ const WorkshopRegistrations: React.FC = () => {
 
   useEffect(() => {
     let unsubscribeWorkshops: (() => void) | undefined;
+    let unsubscribeAllRegistrations: (() => void) | undefined;
 
     const load = async () => {
       setLoading(true);
@@ -77,6 +80,23 @@ const WorkshopRegistrations: React.FC = () => {
           const sorted = [...liveWorkshops].sort((a, b) => a.name.localeCompare(b.name));
           setWorkshops(sorted);
         });
+
+        unsubscribeAllRegistrations = subscribeToWorkshopRegistrationsByEvent(event.id, (liveRegistrations) => {
+          const sorted = [...liveRegistrations].sort((a, b) => {
+            if (a.dateKey !== b.dateKey) {
+              return a.dateKey.localeCompare(b.dateKey);
+            }
+
+            const workshopComparison = a.workshopName.localeCompare(b.workshopName);
+            if (workshopComparison !== 0) {
+              return workshopComparison;
+            }
+
+            return a.participantName.localeCompare(b.participantName);
+          });
+
+          setAllRegistrations(sorted);
+        });
       } catch (error) {
         console.error('Error loading workshop registration page:', error);
         showMessage('Failed to load workshop registration data.', 'error');
@@ -90,6 +110,9 @@ const WorkshopRegistrations: React.FC = () => {
     return () => {
       if (unsubscribeWorkshops) {
         unsubscribeWorkshops();
+      }
+      if (unsubscribeAllRegistrations) {
+        unsubscribeAllRegistrations();
       }
     };
   }, [eventId]);
@@ -124,7 +147,7 @@ const WorkshopRegistrations: React.FC = () => {
 
   useEffect(() => {
     if (!activeEvent || !selectedDateKey) {
-      setRegistrations([]);
+      setSelectedDateRegistrations([]);
       setCounts([]);
       return;
     }
@@ -134,7 +157,7 @@ const WorkshopRegistrations: React.FC = () => {
       selectedDateKey,
       (liveRegistrations) => {
         const sorted = [...liveRegistrations].sort((a, b) => a.participantName.localeCompare(b.participantName));
-        setRegistrations(sorted);
+        setSelectedDateRegistrations(sorted);
       }
     );
 
@@ -149,7 +172,7 @@ const WorkshopRegistrations: React.FC = () => {
   }, [activeEvent, selectedDateKey]);
 
   const selectedParticipant = participants.find((participant) => participant.id === selectedParticipantId) || null;
-  const selectedParticipantRegistration = registrations.find(
+  const selectedParticipantRegistration = selectedDateRegistrations.find(
     (registration) => registration.participantId === selectedParticipantId
   ) || null;
   const setupMessageCount = Number(Boolean(selectedParticipant)) + Number(Boolean(selectedParticipantRegistration));
@@ -172,7 +195,7 @@ const WorkshopRegistrations: React.FC = () => {
   }, {});
 
   const selectedDate = selectedDateKey ? parseDateKey(selectedDateKey) : null;
-  const filteredRegistrations = registrations.filter((registration) => {
+  const filteredRegistrations = allRegistrations.filter((registration) => {
     const query = registrationSearchQuery.trim().toLowerCase();
     if (!query) {
       return true;
@@ -181,48 +204,80 @@ const WorkshopRegistrations: React.FC = () => {
     return (
       registration.participantName.toLowerCase().includes(query) ||
       registration.participantChurch.toLowerCase().includes(query) ||
-      registration.workshopName.toLowerCase().includes(query)
+      registration.workshopName.toLowerCase().includes(query) ||
+      formatDateWithWeekday(parseDateKey(registration.dateKey)).toLowerCase().includes(query)
     );
   });
-  const totalRegistrationsByWorkshop = registrations.reduce<Record<string, number>>((accumulator, registration) => {
-    accumulator[registration.workshopId] = (accumulator[registration.workshopId] || 0) + 1;
+  const totalRegistrationsByDateAndWorkshop = allRegistrations.reduce<Record<string, number>>((accumulator, registration) => {
+    const key = `${registration.dateKey}__${registration.workshopId}`;
+    accumulator[key] = (accumulator[key] || 0) + 1;
     return accumulator;
   }, {});
-  const workshopGroups = Object.values(
-    filteredRegistrations.reduce<Record<string, { workshopName: string; registrations: WorkshopRegistration[] }>>((accumulator, registration) => {
-      if (!accumulator[registration.workshopId]) {
-        accumulator[registration.workshopId] = {
+  const registrationGroupsByDate = Object.values(
+    filteredRegistrations.reduce<Record<string, {
+      dateKey: string;
+      workshops: Record<string, { workshopId: string; workshopName: string; registrations: WorkshopRegistration[] }>;
+    }>>((accumulator, registration) => {
+      if (!accumulator[registration.dateKey]) {
+        accumulator[registration.dateKey] = {
+          dateKey: registration.dateKey,
+          workshops: {},
+        };
+      }
+
+      if (!accumulator[registration.dateKey].workshops[registration.workshopId]) {
+        accumulator[registration.dateKey].workshops[registration.workshopId] = {
           workshopId: registration.workshopId,
           workshopName: registration.workshopName,
           registrations: [],
         };
       }
 
-      accumulator[registration.workshopId].registrations.push(registration);
+      accumulator[registration.dateKey].workshops[registration.workshopId].registrations.push(registration);
       return accumulator;
     }, {})
   )
-    .map((group) => ({
-      workshopId: group.workshopId,
-      workshopName: group.workshopName,
-      registrations: [...group.registrations].sort((a, b) => a.participantName.localeCompare(b.participantName)),
+    .map((dateGroup) => ({
+      dateKey: dateGroup.dateKey,
+      workshops: Object.values(dateGroup.workshops)
+        .map((group) => ({
+          workshopId: group.workshopId,
+          workshopName: group.workshopName,
+          registrations: [...group.registrations].sort((a, b) => a.participantName.localeCompare(b.participantName)),
+        }))
+        .sort((a, b) => a.workshopName.localeCompare(b.workshopName)),
     }))
-    .sort((a, b) => a.workshopName.localeCompare(b.workshopName));
+    .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
 
-  const refreshSelectedDate = async () => {
+  const refreshRegistrations = async () => {
     if (!activeEvent || !selectedDateKey) {
       return;
     }
 
     setRefreshing(true);
     try {
-      const [registrationData, countData] = await Promise.all([
+      const [selectedDateRegistrationData, allRegistrationData, countData] = await Promise.all([
         getWorkshopRegistrationsByDate(activeEvent.id, selectedDateKey),
+        getWorkshopRegistrationsByEvent(activeEvent.id),
         getWorkshopDailyCountsByDate(activeEvent.id, selectedDateKey),
       ]);
 
-      registrationData.sort((a, b) => a.participantName.localeCompare(b.participantName));
-      setRegistrations(registrationData);
+      selectedDateRegistrationData.sort((a, b) => a.participantName.localeCompare(b.participantName));
+      allRegistrationData.sort((a, b) => {
+        if (a.dateKey !== b.dateKey) {
+          return a.dateKey.localeCompare(b.dateKey);
+        }
+
+        const workshopComparison = a.workshopName.localeCompare(b.workshopName);
+        if (workshopComparison !== 0) {
+          return workshopComparison;
+        }
+
+        return a.participantName.localeCompare(b.participantName);
+      });
+
+      setSelectedDateRegistrations(selectedDateRegistrationData);
+      setAllRegistrations(allRegistrationData);
       setCounts(countData);
       showMessage('Workshop registrations refreshed.', 'success');
     } catch (error) {
@@ -432,71 +487,82 @@ const WorkshopRegistrations: React.FC = () => {
                   type="text"
                   value={registrationSearchQuery}
                   onChange={(event) => setRegistrationSearchQuery(event.target.value)}
-                  placeholder="Search participant, church, or workshop"
+                  placeholder="Search participant, church, workshop, or date"
                   className="w-full rounded border border-gray-300 px-3 py-2 text-sm md:w-80"
                 />
               </div>
-              <Button variant="outline" onClick={refreshSelectedDate} isLoading={refreshing}>
+              <Button variant="outline" onClick={refreshRegistrations} isLoading={refreshing}>
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh
               </Button>
             </CardHeader>
             <CardContent>
-              {workshopGroups.length > 0 ? (
+              {registrationGroupsByDate.length > 0 ? (
                 <div className="space-y-4">
-                  {workshopGroups.map((group) => (
-                    <div key={group.workshopName} className="rounded-md border border-gray-200 bg-white">
-                      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                  {registrationGroupsByDate.map((dateGroup) => (
+                    <div key={dateGroup.dateKey} className="rounded-md border border-gray-200 bg-white">
+                      <div className="border-b border-gray-200 px-4 py-3">
                         <h3 className="font-medium text-gray-900">
-                          {group.workshopName} ({group.registrations.length} / {totalRegistrationsByWorkshop[group.workshopId] || 0})
+                          {formatDateWithWeekday(parseDateKey(dateGroup.dateKey))}
                         </h3>
                       </div>
-                      <div className="space-y-2 p-3">
-                        {group.registrations.map((registration) => (
-                          <div
-                            key={registration.id}
-                            className="flex items-center justify-between rounded-md border border-gray-200 bg-gray-50 p-3 hover:bg-gray-100"
-                          >
-                            <div>
-                              <p className="font-medium">{registration.participantName}</p>
-                              <p className="text-sm text-gray-500">{registration.participantChurch}</p>
+                      <div className="space-y-4 p-3">
+                        {dateGroup.workshops.map((group) => (
+                          <div key={`${dateGroup.dateKey}__${group.workshopId}`} className="rounded-md border border-gray-200 bg-white">
+                            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                              <h4 className="font-medium text-gray-900">
+                                {group.workshopName} ({group.registrations.length} / {totalRegistrationsByDateAndWorkshop[`${dateGroup.dateKey}__${group.workshopId}`] || 0})
+                              </h4>
                             </div>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              isLoading={deregisteringId === registration.id}
-                              onClick={async () => {
-                                if (!activeEvent) {
-                                  return;
-                                }
+                            <div className="space-y-2 p-3">
+                              {group.registrations.map((registration) => (
+                                <div
+                                  key={registration.id}
+                                  className="flex items-center justify-between rounded-md border border-gray-200 bg-gray-50 p-3 hover:bg-gray-100"
+                                >
+                                  <div>
+                                    <p className="font-medium">{registration.participantName}</p>
+                                    <p className="text-sm text-gray-500">{registration.participantChurch}</p>
+                                  </div>
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
+                                    isLoading={deregisteringId === registration.id}
+                                    onClick={async () => {
+                                      if (!activeEvent) {
+                                        return;
+                                      }
 
-                                setDeregisteringId(registration.id);
-                                try {
-                                  await deregisterParticipantFromWorkshop({
-                                    eventId: activeEvent.id,
-                                    registration,
-                                  });
-                                  showMessage(`Removed ${registration.participantName} from ${registration.workshopName}.`, 'success');
-                                } catch (error) {
-                                  console.error('Error deregistering participant:', error);
-                                  showMessage(error instanceof Error ? error.message : 'Failed to deregister participant.', 'error');
-                                } finally {
-                                  setDeregisteringId(null);
-                                }
-                              }}
-                            >
-                              De-register
-                            </Button>
+                                      setDeregisteringId(registration.id);
+                                      try {
+                                        await deregisterParticipantFromWorkshop({
+                                          eventId: activeEvent.id,
+                                          registration,
+                                        });
+                                        showMessage(`Removed ${registration.participantName} from ${registration.workshopName}.`, 'success');
+                                      } catch (error) {
+                                        console.error('Error deregistering participant:', error);
+                                        showMessage(error instanceof Error ? error.message : 'Failed to deregister participant.', 'error');
+                                      } finally {
+                                        setDeregisteringId(null);
+                                      }
+                                    }}
+                                  >
+                                    De-register
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         ))}
                       </div>
                     </div>
                   ))}
                 </div>
-              ) : registrations.length > 0 ? (
+              ) : allRegistrations.length > 0 ? (
                 <p className="text-sm text-gray-600">No registrations match the current search.</p>
               ) : (
-                <p className="text-sm text-gray-600">No registrations found for the selected date.</p>
+                <p className="text-sm text-gray-600">No workshop registrations found for this event.</p>
               )}
             </CardContent>
           </Card>
