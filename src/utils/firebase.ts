@@ -1062,6 +1062,131 @@ export async function registerParticipantForWorkshop({
   });
 }
 
+export async function switchParticipantWorkshopRegistration({
+  eventId,
+  workshopId,
+  participant,
+  registeredBy,
+  dateKey,
+}: {
+  eventId: string;
+  workshopId: string;
+  participant: Participant;
+  registeredBy: string;
+  dateKey: string;
+}) {
+  const workshopRef = doc(db, 'events', eventId, 'workshops', workshopId);
+  const participantRef = doc(db, 'events', eventId, 'participants', participant.id);
+  const registrationRef = doc(
+    db,
+    'events',
+    eventId,
+    'workshopRegistrations',
+    buildWorkshopRegistrationId(dateKey, participant.id)
+  );
+
+  await runTransaction(db, async (transaction) => {
+    const [workshopSnap, participantSnap, existingRegistrationSnap] = await Promise.all([
+      transaction.get(workshopRef),
+      transaction.get(participantRef),
+      transaction.get(registrationRef),
+    ]);
+
+    if (!workshopSnap.exists()) {
+      throw new Error('Workshop not found.');
+    }
+
+    if (!participantSnap.exists()) {
+      throw new Error('Participant no longer exists for this event.');
+    }
+
+    if (!existingRegistrationSnap.exists()) {
+      throw new Error('The participant is no longer registered for that date.');
+    }
+
+    const workshopData = workshopSnap.data() as Omit<Workshop, 'availableFrom' | 'availableTo' | 'createdAt'> & {
+      availableFrom: Timestamp;
+      availableTo: Timestamp;
+      createdAt: Timestamp;
+    };
+
+    const workshop: Workshop = {
+      id: workshopSnap.id,
+      ...workshopData,
+      availableFrom: workshopData.availableFrom.toDate(),
+      availableTo: workshopData.availableTo.toDate(),
+      lockRegistrationDateToToday: Boolean(workshopData.lockRegistrationDateToToday),
+      createdAt: workshopData.createdAt.toDate(),
+    };
+
+    const existingRegistrationData = existingRegistrationSnap.data() as Omit<WorkshopRegistration, 'registeredAt'> & {
+      registeredAt: Timestamp;
+    };
+
+    if (existingRegistrationData.workshopId === workshopId) {
+      throw new Error('Participant is already registered for this workshop on that date.');
+    }
+
+    const selectedDate = new Date(`${dateKey}T00:00:00`);
+
+    if (!workshop.active || !isDateWithinRange(selectedDate, workshop.availableFrom, workshop.availableTo)) {
+      throw new Error('This workshop is not available on the selected date.');
+    }
+
+    const targetCountRef = doc(
+      db,
+      'events',
+      eventId,
+      'workshopDailyCounts',
+      buildWorkshopDailyCountId(workshopId, dateKey)
+    );
+    const sourceCountRef = doc(
+      db,
+      'events',
+      eventId,
+      'workshopDailyCounts',
+      buildWorkshopDailyCountId(existingRegistrationData.workshopId, dateKey)
+    );
+
+    const [targetCountSnap, sourceCountSnap] = await Promise.all([
+      transaction.get(targetCountRef),
+      transaction.get(sourceCountRef),
+    ]);
+
+    const targetCurrentCount = targetCountSnap.exists() ? Number(targetCountSnap.data().count || 0) : 0;
+    if (targetCurrentCount >= workshop.maxRegistrationsPerDay) {
+      throw new Error('This workshop just reached its maximum registrations.');
+    }
+
+    const sourceCurrentCount = sourceCountSnap.exists() ? Number(sourceCountSnap.data().count || 0) : 0;
+
+    transaction.set(registrationRef, {
+      workshopId: workshop.id,
+      workshopName: workshop.name,
+      participantId: participant.id,
+      participantName: participant.name,
+      participantChurch: participant.church,
+      dateKey,
+      registeredBy,
+      registeredAt: serverTimestamp(),
+    });
+
+    transaction.set(targetCountRef, {
+      workshopId: workshop.id,
+      workshopName: workshop.name,
+      dateKey,
+      count: targetCurrentCount + 1,
+      maxRegistrations: workshop.maxRegistrationsPerDay,
+    });
+
+    if (sourceCurrentCount <= 1) {
+      transaction.delete(sourceCountRef);
+    } else {
+      transaction.update(sourceCountRef, { count: sourceCurrentCount - 1 });
+    }
+  });
+}
+
 export async function deregisterParticipantFromWorkshop({
   eventId,
   registration,

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import Button from '../components/ui/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Tabs from '../components/ui/Tabs';
+import Modal from '../components/ui/Modal';
 import {
   deregisterParticipantFromWorkshop,
   getEventById,
@@ -18,6 +19,7 @@ import {
   subscribeToWorkshopRegistrationsByEvent,
   subscribeToWorkshopRegistrationsByDate,
   subscribeToWorkshopsByEvent,
+  switchParticipantWorkshopRegistration,
 } from '../utils/firebase';
 import { Event, Participant, Workshop, WorkshopDailyCount, WorkshopRegistration } from '../types';
 import {
@@ -51,6 +53,7 @@ const WorkshopRegistrations: React.FC = () => {
   const [submittingWorkshopId, setSubmittingWorkshopId] = useState<string | null>(null);
   const [deregisteringId, setDeregisteringId] = useState<string | null>(null);
   const [registrationSearchQuery, setRegistrationSearchQuery] = useState('');
+  const [pendingWorkshopSwitch, setPendingWorkshopSwitch] = useState<Workshop | null>(null);
 
   useEffect(() => {
     let unsubscribeWorkshops: (() => void) | undefined;
@@ -249,6 +252,58 @@ const WorkshopRegistrations: React.FC = () => {
     }))
     .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
 
+  const closeSwitchModal = () => {
+    if (submittingWorkshopId) {
+      return;
+    }
+
+    setPendingWorkshopSwitch(null);
+  };
+
+  const handleWorkshopRegistration = async (workshop: Workshop) => {
+    if (!activeEvent || !selectedParticipant || !user || !selectedDateKey) {
+      return;
+    }
+
+    setSubmittingWorkshopId(workshop.id);
+    try {
+      if (
+        selectedParticipantRegistration &&
+        selectedParticipantRegistration.workshopId !== workshop.id
+      ) {
+        await switchParticipantWorkshopRegistration({
+          eventId: activeEvent.id,
+          workshopId: workshop.id,
+          participant: selectedParticipant,
+          registeredBy: user.id,
+          dateKey: selectedDateKey,
+        });
+        showMessage(
+          `Moved ${selectedParticipant.name} from ${selectedParticipantRegistration.workshopName} to ${workshop.name}.`,
+          'success'
+        );
+      } else {
+        await registerParticipantForWorkshop({
+          eventId: activeEvent.id,
+          workshopId: workshop.id,
+          participant: selectedParticipant,
+          registeredBy: user.id,
+          dateKey: selectedDateKey,
+        });
+        showMessage(`Registered ${selectedParticipant.name} for ${workshop.name}.`, 'success');
+      }
+
+      setSelectedParticipantId('');
+      setParticipantQuery('');
+      setPendingWorkshopSwitch(null);
+    } catch (error) {
+      console.error('Error registering participant for workshop:', error);
+      showMessage(error instanceof Error ? error.message : 'Failed to register participant.', 'error');
+    } finally {
+      setSubmittingWorkshopId(null);
+    }
+  };
+
   const refreshRegistrations = async () => {
     if (!activeEvent || !selectedDateKey) {
       return;
@@ -412,6 +467,7 @@ const WorkshopRegistrations: React.FC = () => {
                   : isFull
                     ? 'Full'
                     : '';
+              const isCurrentWorkshop = selectedParticipantRegistration?.workshopId === workshop.id;
               const canRegister = Boolean(
                 activeEvent &&
                 selectedParticipant &&
@@ -419,7 +475,7 @@ const WorkshopRegistrations: React.FC = () => {
                 workshop.active &&
                 availableOnSelectedDate &&
                 !isFull &&
-                !selectedParticipantRegistration
+                !isCurrentWorkshop
               );
 
               return (
@@ -438,31 +494,22 @@ const WorkshopRegistrations: React.FC = () => {
                       disabled={!canRegister}
                       isLoading={submittingWorkshopId === workshop.id}
                       onClick={async () => {
-                        if (!activeEvent || !selectedParticipant || !user || !selectedDateKey) {
+                        if (!selectedParticipant) {
                           return;
                         }
 
-                        setSubmittingWorkshopId(workshop.id);
-                        try {
-                          await registerParticipantForWorkshop({
-                            eventId: activeEvent.id,
-                            workshopId: workshop.id,
-                            participant: selectedParticipant,
-                            registeredBy: user.id,
-                            dateKey: selectedDateKey,
-                          });
-                          setSelectedParticipantId('');
-                          setParticipantQuery('');
-                          showMessage(`Registered ${selectedParticipant.name} for ${workshop.name}.`, 'success');
-                        } catch (error) {
-                          console.error('Error registering participant for workshop:', error);
-                          showMessage(error instanceof Error ? error.message : 'Failed to register participant.', 'error');
-                        } finally {
-                          setSubmittingWorkshopId(null);
+                        if (
+                          selectedParticipantRegistration &&
+                          selectedParticipantRegistration.workshopId !== workshop.id
+                        ) {
+                          setPendingWorkshopSwitch(workshop);
+                          return;
                         }
+
+                        await handleWorkshopRegistration(workshop);
                       }}
                     >
-                      Register
+                      {isCurrentWorkshop ? 'Already Registered' : selectedParticipantRegistration ? 'Switch Registration' : 'Register'}
                     </Button>
                   </CardContent>
                 </Card>
@@ -589,6 +636,44 @@ const WorkshopRegistrations: React.FC = () => {
             {message}
           </div>
         )}
+
+        <Modal
+          isOpen={!!pendingWorkshopSwitch}
+          onClose={closeSwitchModal}
+          title="Confirm Workshop Change"
+        >
+          <div className="space-y-4 pt-4">
+            <p className="text-sm text-gray-700">
+              {selectedParticipant?.name} is already registered for{' '}
+              <span className="font-medium">{selectedParticipantRegistration?.workshopName}</span> on{' '}
+              <span className="font-medium">
+                {selectedDate ? formatDateWithWeekday(selectedDate) : selectedDateKey}
+              </span>.
+            </p>
+            <p className="text-sm text-gray-700">
+              If you continue, the current registration will be removed and replaced with{' '}
+              <span className="font-medium">{pendingWorkshopSwitch?.name}</span>.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <Button variant="outline" onClick={closeSwitchModal} disabled={Boolean(submittingWorkshopId)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!pendingWorkshopSwitch) {
+                    return;
+                  }
+
+                  await handleWorkshopRegistration(pendingWorkshopSwitch);
+                }}
+                disabled={Boolean(submittingWorkshopId)}
+                isLoading={submittingWorkshopId === pendingWorkshopSwitch?.id}
+              >
+                Confirm Change
+              </Button>
+            </div>
+          </div>
+        </Modal>
 
         {!activeEvent ? (
           <Card>
