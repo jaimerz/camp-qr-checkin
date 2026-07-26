@@ -2,8 +2,6 @@ import { UserRole, Workshop } from '../types';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-export const CURRENT_DATE_REFERENCE = new Date('2026-07-24T12:00:00');
-
 // Combine Tailwind classes safely
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -12,6 +10,15 @@ export function cn(...inputs: ClassValue[]) {
 // Format date to readable string
 export function formatDate(date: Date): string {
   return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+export function formatDateWithWeekday(date: Date): string {
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -77,6 +84,10 @@ export function getActivityLogTypeColor(type: 'departure' | 'return'): string {
 
 export function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+export function getCurrentDateReference(): Date {
+  return startOfDay(new Date());
 }
 
 export function addDays(date: Date, days: number): Date {

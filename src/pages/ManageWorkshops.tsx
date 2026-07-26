@@ -16,7 +16,7 @@ import {
   updateWorkshop,
 } from '../utils/firebase';
 import { Event, Workshop } from '../types';
-import { CURRENT_DATE_REFERENCE, formatDate, formatDateKey } from '../utils/helpers';
+import { formatDateKey, formatDateWithWeekday, getCurrentDateReference } from '../utils/helpers';
 
 const toDateInputValue = (date: Date) => {
   const year = date.getFullYear();
@@ -47,7 +47,7 @@ const ManageWorkshops: React.FC = () => {
   const [confirmText, setConfirmText] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
-  const todayKey = formatDateKey(CURRENT_DATE_REFERENCE);
+  const todayKey = formatDateKey(getCurrentDateReference());
   const isDateSelectionLocked = workshops.length > 0 && workshops.every((workshop) => workshop.lockRegistrationDateToToday);
 
   useEffect(() => {
@@ -436,7 +436,7 @@ const ManageWorkshops: React.FC = () => {
                           <div>
                             <p className="font-medium">{workshop.name}</p>
                             <p className="text-sm text-gray-500">
-                              {formatDate(workshop.availableFrom)} - {formatDate(workshop.availableTo)}
+                              {formatDateWithWeekday(workshop.availableFrom)} - {formatDateWithWeekday(workshop.availableTo)}
                             </p>
                             <p className="text-sm text-gray-500">
                               Max per day: {workshop.maxRegistrationsPerDay} | Status: {workshop.active ? 'Active' : 'Inactive'} | Date mode: {workshop.lockRegistrationDateToToday ? 'Current date only' : 'Manual'}
