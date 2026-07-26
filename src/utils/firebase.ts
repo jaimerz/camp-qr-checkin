@@ -911,6 +911,29 @@ export function subscribeToWorkshopRegistrationsByDate(
   });
 }
 
+export function subscribeToWorkshopRegistrationsByEvent(
+  eventId: string,
+  callback: (registrations: WorkshopRegistration[]) => void
+) {
+  const registrationsRef = collection(db, 'events', eventId, 'workshopRegistrations');
+
+  return onSnapshot(registrationsRef, (snapshot) => {
+    const registrations: WorkshopRegistration[] = snapshot.docs.map((docSnap) => {
+      const data = docSnap.data() as Omit<WorkshopRegistration, 'registeredAt'> & {
+        registeredAt: Timestamp;
+      };
+
+      return {
+        id: docSnap.id,
+        ...data,
+        registeredAt: data.registeredAt.toDate(),
+      };
+    });
+
+    callback(registrations);
+  });
+}
+
 export function subscribeToWorkshopDailyCountsByDate(
   eventId: string,
   dateKey: string,
@@ -1151,6 +1174,22 @@ export async function getWorkshopRegistrationsByDate(eventId: string, dateKey: s
     where('dateKey', '==', dateKey)
   );
   const snapshot = await getDocs(registrationsQuery);
+
+  return snapshot.docs.map((docSnap) => {
+    const data = docSnap.data() as Omit<WorkshopRegistration, 'registeredAt'> & {
+      registeredAt: Timestamp;
+    };
+
+    return {
+      id: docSnap.id,
+      ...data,
+      registeredAt: data.registeredAt.toDate(),
+    };
+  });
+}
+
+export async function getWorkshopRegistrationsByEvent(eventId: string): Promise<WorkshopRegistration[]> {
+  const snapshot = await getDocs(collection(db, 'events', eventId, 'workshopRegistrations'));
 
   return snapshot.docs.map((docSnap) => {
     const data = docSnap.data() as Omit<WorkshopRegistration, 'registeredAt'> & {
