@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { Calendar, Users, MapPin, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Calendar, Users, MapPin, RefreshCw, Undo2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Tabs from '../components/ui/Tabs';
 import Badge from '../components/ui/Badge';
+import Modal from '../components/ui/Modal';
 import AuthGuard from '../components/AuthGuard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { 
@@ -12,14 +13,18 @@ import {
   getActivitiesByEvent,
   getEventById,
   getParticipantsByActivityId,
-  getParticipantsAtCamp
+  getParticipantsAtCamp,
+  createActivityLog,
+  updateParticipantLocation
 } from '../utils/firebase';
 import { Participant, Activity, Event } from '../types';
 import { formatDate } from '../utils/helpers';
+import { useUser } from '../context/UserContext';
 
 
 const EventDetail: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
+  const { user } = useUser();
   const [event, setEvent] = useState<Event | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -32,6 +37,10 @@ const EventDetail: React.FC = () => {
   const [selectedActivityParticipants, setSelectedActivityParticipants] = useState<Participant[]>([]);
   const [selectedActivityName, setSelectedActivityName] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [manualReturnParticipant, setManualReturnParticipant] = useState<Participant | null>(null);
+  const [manualReturnActivity, setManualReturnActivity] = useState<Activity | null>(null);
+  const [isManualReturning, setIsManualReturning] = useState(false);
+  const isAdmin = user?.role === 'admin';
 
   const normalize = (s: string) => s.trim().toLowerCase();
   const matchesSearch = (p: Participant) =>
@@ -48,6 +57,12 @@ const EventDetail: React.FC = () => {
     setModalVisible(false);
     setSelectedActivityParticipants([]);
     setSelectedActivityName(null);
+  };
+
+  const closeManualReturnModal = () => {
+    if (isManualReturning) return;
+    setManualReturnParticipant(null);
+    setManualReturnActivity(null);
   };
 
   useEffect(() => {
@@ -133,6 +148,32 @@ const EventDetail: React.FC = () => {
       setParticipantsByActivity(byActivityData);
     } catch (error) {
       console.error('Error refreshing live data:', error);
+    }
+  };
+
+  const handleManualReturn = async () => {
+    if (!eventId || !user?.id || !manualReturnParticipant || !manualReturnActivity) {
+      return;
+    }
+
+    setIsManualReturning(true);
+    try {
+      await createActivityLog({
+        eventId,
+        participantId: manualReturnParticipant.id,
+        activityId: manualReturnActivity.id,
+        leaderId: user.id,
+        type: 'return',
+      });
+
+      await updateParticipantLocation(eventId, manualReturnParticipant.id, null);
+      await refreshLiveData();
+      closeManualReturnModal();
+    } catch (error) {
+      console.error('Error manually checking participant back in:', error);
+      alert('Failed to manually check the participant back in.');
+    } finally {
+      setIsManualReturning(false);
     }
   };
 
@@ -280,9 +321,25 @@ const EventDetail: React.FC = () => {
                               <p className="font-medium">{participant.name}</p>
                               <p className="text-sm text-gray-500">{participant.church}</p>
                             </div>
-                            <Badge variant={participant.type === 'student' ? 'primary' : 'secondary'}>
-                              {participant.type}
-                            </Badge>
+                            <div className="flex items-center space-x-2">
+                              {isAdmin && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setManualReturnParticipant(participant);
+                                    setManualReturnActivity(activity);
+                                  }}
+                                  className="rounded-full p-1 text-gray-400 transition-colors hover:text-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1"
+                                  title="Manually check back in"
+                                  aria-label={`Manually check ${participant.name} back in`}
+                                >
+                                  <Undo2 className="h-4 w-4" />
+                                </button>
+                              )}
+                              <Badge variant={participant.type === 'student' ? 'primary' : 'secondary'}>
+                                {participant.type}
+                              </Badge>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -469,6 +526,30 @@ const EventDetail: React.FC = () => {
           </div>
         </div>
       )}
+
+      <Modal
+        isOpen={!!manualReturnParticipant && !!manualReturnActivity}
+        onClose={closeManualReturnModal}
+        title="Confirm Manual Check-In"
+      >
+        <div className="space-y-4 pt-4">
+          <p className="text-sm text-gray-700">
+            {manualReturnParticipant?.name} will be manually checked back in to camp and removed from{' '}
+            {manualReturnActivity?.name}.
+          </p>
+          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+            Only confirm this when you are sure the participant already returned and the QR scan was missed.
+          </p>
+          <div className="flex justify-end space-x-3">
+            <Button variant="outline" onClick={closeManualReturnModal} disabled={isManualReturning}>
+              Cancel
+            </Button>
+            <Button onClick={handleManualReturn} disabled={isManualReturning}>
+              {isManualReturning ? 'Checking In...' : 'Confirm Check-In'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
     </AuthGuard>
   );

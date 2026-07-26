@@ -45,6 +45,38 @@ export interface Activity {
   createdAt: Date;
 }
 
+export interface Workshop {
+  id: string;
+  name: string;
+  availableFrom: Date;
+  availableTo: Date;
+  maxRegistrationsPerDay: number;
+  lockRegistrationDateToToday: boolean;
+  active: boolean;
+  createdAt: Date;
+}
+
+export interface WorkshopRegistration {
+  id: string;
+  workshopId: string;
+  workshopName: string;
+  participantId: string;
+  participantName: string;
+  participantChurch: string;
+  dateKey: string;
+  registeredBy: string;
+  registeredAt: Date;
+}
+
+export interface WorkshopDailyCount {
+  id: string;
+  workshopId: string;
+  workshopName: string;
+  dateKey: string;
+  count: number;
+  maxRegistrations: number;
+}
+
 export interface ActivityLog {
   id: string;
   participantId: string;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Users, BarChart, Activity, QrCode } from 'lucide-react';
+import { Calendar, Users, BarChart, Activity, QrCode, Ticket } from 'lucide-react';
 import { getEvents } from '../utils/firebase';
 import { Event } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
@@ -36,6 +36,8 @@ const Dashboard: React.FC = () => {
   const activeEvents = events
     .filter((event) => event.active)
     .sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
+  const workshopRegistrationLink = activeEventId ? `/events/${activeEventId}/workshops/register` : '#';
+  const workshopManagementLink = activeEventId ? `/events/${activeEventId}/workshops/manage` : '#';
 
   if (userLoading || loading) {
     return <LoadingSpinner />;
@@ -80,6 +82,23 @@ const Dashboard: React.FC = () => {
             </Link>
           )}
 
+          {['admin', 'leader'].includes(user?.role || '') && (
+            <Link
+              to={workshopRegistrationLink}
+              className={`block ${!activeEventId ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              <Card className="h-full transition-transform hover:shadow-md hover:-translate-y-1">
+                <CardContent className="flex flex-col items-center justify-center p-6">
+                  <Ticket className="mb-4 h-12 w-12 text-orange-500" />
+                  <h3 className="font-medium text-gray-900">Workshop Registrations</h3>
+                  <p className="mt-2 text-center text-sm text-gray-500">
+                    Register participants for workshops by date
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
+
           {user?.role === 'admin' && (
             <>
               <Link to="/participants" className="block">
@@ -101,6 +120,18 @@ const Dashboard: React.FC = () => {
                     <h3 className="font-medium text-gray-900">Manage Activities</h3>
                     <p className="text-sm text-gray-500 text-center mt-2">
                       Create and organize camp activities
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link to={workshopManagementLink} className={`block ${!activeEventId ? 'pointer-events-none opacity-50' : ''}`}>
+                <Card className="h-full transition-transform hover:shadow-md hover:-translate-y-1">
+                  <CardContent className="flex flex-col items-center justify-center p-6">
+                    <Ticket className="mb-4 h-12 w-12 text-rose-500" />
+                    <h3 className="font-medium text-gray-900">Workshop Management</h3>
+                    <p className="mt-2 text-center text-sm text-gray-500">
+                      Configure workshops, dates, and daily capacities
                     </p>
                   </CardContent>
                 </Card>

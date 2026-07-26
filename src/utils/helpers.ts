@@ -1,6 +1,8 @@
-import { UserRole } from '../types';
+import { UserRole, Workshop } from '../types';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+
+export const CURRENT_DATE_REFERENCE = new Date('2026-07-24T12:00:00');
 
 // Combine Tailwind classes safely
 export function cn(...inputs: ClassValue[]) {
@@ -71,4 +73,62 @@ export function formatDateTime(date: Date): string {
 // Get activity log type badge color
 export function getActivityLogTypeColor(type: 'departure' | 'return'): string {
   return type === 'departure' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800';
+}
+
+export function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+export function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+export function formatDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function parseDateKey(dateKey: string): Date {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+export function isDateWithinRange(date: Date, from: Date, to: Date): boolean {
+  const target = startOfDay(date).getTime();
+  const start = startOfDay(from).getTime();
+  const end = startOfDay(to).getTime();
+  return target >= start && target <= end;
+}
+
+export function getDateKeysInRange(from: Date, to: Date, minDate?: Date): string[] {
+  const start = startOfDay(from);
+  const end = startOfDay(to);
+  const floor = minDate ? startOfDay(minDate) : null;
+  const dates: string[] = [];
+
+  for (let cursor = start; cursor.getTime() <= end.getTime(); cursor = addDays(cursor, 1)) {
+    if (!floor || cursor.getTime() >= floor.getTime()) {
+      dates.push(formatDateKey(cursor));
+    }
+  }
+
+  return dates;
+}
+
+export function getUpcomingWorkshopDateKeys(workshops: Workshop[], today: Date): string[] {
+  return Array.from(
+    new Set(
+      workshops.flatMap((workshop) => {
+        if (!workshop.active) {
+          return [];
+        }
+
+        return getDateKeysInRange(workshop.availableFrom, workshop.availableTo, today);
+      })
+    )
+  ).sort();
 }
