@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { ChevronDown, ChevronRight, Copy, RefreshCw } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import AuthGuard from '../components/AuthGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -54,6 +54,7 @@ const WorkshopRegistrations: React.FC = () => {
   const [deregisteringId, setDeregisteringId] = useState<string | null>(null);
   const [registrationSearchQuery, setRegistrationSearchQuery] = useState('');
   const [pendingWorkshopSwitch, setPendingWorkshopSwitch] = useState<Workshop | null>(null);
+  const [collapsedDates, setCollapsedDates] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let unsubscribeWorkshops: (() => void) | undefined;
@@ -216,6 +217,13 @@ const WorkshopRegistrations: React.FC = () => {
     accumulator[key] = (accumulator[key] || 0) + 1;
     return accumulator;
   }, {});
+  const emptyUpcomingDateGroups = visibleDateOptions.reduce<Record<string, {
+    dateKey: string;
+    workshops: Record<string, { workshopId: string; workshopName: string; registrations: WorkshopRegistration[] }>;
+  }>>((accumulator, dateKey) => {
+    accumulator[dateKey] = { dateKey, workshops: {} };
+    return accumulator;
+  }, {});
   const registrationGroupsByDate = Object.values(
     filteredRegistrations.reduce<Record<string, {
       dateKey: string;
@@ -238,7 +246,7 @@ const WorkshopRegistrations: React.FC = () => {
 
       accumulator[registration.dateKey].workshops[registration.workshopId].registrations.push(registration);
       return accumulator;
-    }, {})
+    }, registrationSearchQuery.trim() ? {} : emptyUpcomingDateGroups)
   )
     .map((dateGroup) => ({
       dateKey: dateGroup.dateKey,
@@ -258,6 +266,64 @@ const WorkshopRegistrations: React.FC = () => {
     }
 
     setPendingWorkshopSwitch(null);
+  };
+
+  const copyRegistrationsForDate = async (dateKey: string) => {
+    const registrationsByWorkshop = allRegistrations
+      .filter((registration) => registration.dateKey === dateKey)
+      .reduce<Record<string, { name: string; registrations: WorkshopRegistration[] }>>((accumulator, registration) => {
+        accumulator[registration.workshopId] = accumulator[registration.workshopId] || {
+          name: registration.workshopName,
+          registrations: [],
+        };
+        accumulator[registration.workshopId].registrations.push(registration);
+        return accumulator;
+      }, {});
+    const text = Object.values(registrationsByWorkshop)
+      .sort((first, second) => first.name.localeCompare(second.name))
+      .map((workshop) => [
+        workshop.name,
+        ...workshop.registrations
+          .sort((first, second) => first.participantName.localeCompare(second.participantName))
+          .map((registration) => `${registration.participantName} - ${registration.participantChurch}`),
+      ].join('\n'))
+      .join('\n\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+      showMessage('Registrations copied to clipboard.', 'success');
+    } catch (error) {
+      console.error('Error copying workshop registrations:', error);
+      showMessage('Failed to copy registrations.', 'error');
+    }
+  };
+
+  const copyUnregisteredParticipantsForDate = async (dateKey: string) => {
+    const registeredParticipantIds = new Set(
+      allRegistrations
+        .filter((registration) => registration.dateKey === dateKey)
+        .map((registration) => registration.participantId)
+    );
+    const unregisteredParticipants = participants.filter(
+      (participant) => participant.type === 'student' && !registeredParticipantIds.has(participant.id)
+    );
+
+    if (!unregisteredParticipants.length) {
+      showMessage('All students have a workshop registration for this date.', 'success');
+      return;
+    }
+
+    const text = unregisteredParticipants
+      .map((participant) => `${participant.name} - ${participant.church}`)
+      .join('\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+      showMessage('Students without registrations copied to clipboard.', 'success');
+    } catch (error) {
+      console.error('Error copying students without registrations:', error);
+      showMessage('Failed to copy students without registrations.', 'error');
+    }
   };
 
   const handleWorkshopRegistration = async (workshop: Workshop) => {
@@ -526,18 +592,13 @@ const WorkshopRegistrations: React.FC = () => {
         <div className="space-y-6">
           <Card>
             <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-3">
-                <CardTitle>
-                  {selectedDate ? `Registrations for ${formatDateWithWeekday(selectedDate)}` : 'Registrations'}
-                </CardTitle>
-                <input
-                  type="text"
-                  value={registrationSearchQuery}
-                  onChange={(event) => setRegistrationSearchQuery(event.target.value)}
-                  placeholder="Search participant, church, workshop, or date"
-                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm md:w-80"
-                />
-              </div>
+              <input
+                type="text"
+                value={registrationSearchQuery}
+                onChange={(event) => setRegistrationSearchQuery(event.target.value)}
+                placeholder="Search participant, church, workshop, or date"
+                className="w-full rounded border border-gray-300 px-3 py-2 text-sm md:w-80"
+              />
               <Button variant="outline" onClick={refreshRegistrations} isLoading={refreshing}>
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh
@@ -546,15 +607,53 @@ const WorkshopRegistrations: React.FC = () => {
             <CardContent>
               {registrationGroupsByDate.length > 0 ? (
                 <div className="space-y-4">
-                  {registrationGroupsByDate.map((dateGroup) => (
-                    <div key={dateGroup.dateKey} className="rounded-md border border-gray-200 bg-white">
-                      <div className="border-b border-gray-200 px-4 py-3">
-                        <h3 className="font-medium text-gray-900">
-                          {formatDateWithWeekday(parseDateKey(dateGroup.dateKey))}
-                        </h3>
-                      </div>
-                      <div className="space-y-4 p-3">
-                        {dateGroup.workshops.map((group) => (
+                  {registrationGroupsByDate.map((dateGroup) => {
+                    const isCollapsed = collapsedDates[dateGroup.dateKey] ?? dateGroup.dateKey < currentDateKey;
+
+                    return (
+                      <div key={dateGroup.dateKey} className="rounded-md border border-gray-200 bg-white">
+                        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                          <h3 className="font-medium text-gray-900">
+                            {formatDateWithWeekday(parseDateKey(dateGroup.dateKey))}
+                          </h3>
+                          <div className="flex items-center">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2"
+                              title="Copy registrations for this date"
+                              aria-label={`Copy registrations for ${formatDateWithWeekday(parseDateKey(dateGroup.dateKey))}`}
+                              onClick={() => copyRegistrationsForDate(dateGroup.dateKey)}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2"
+                              title={isCollapsed ? 'Expand date' : 'Collapse date'}
+                              aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${formatDateWithWeekday(parseDateKey(dateGroup.dateKey))}`}
+                              aria-expanded={!isCollapsed}
+                              onClick={() => setCollapsedDates((current) => ({
+                                ...current,
+                                [dateGroup.dateKey]: !isCollapsed,
+                              }))}
+                            >
+                              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        </div>
+                        {!isCollapsed && (
+                          <div className="space-y-4 p-3">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => copyUnregisteredParticipantsForDate(dateGroup.dateKey)}
+                            >
+                              <Copy className="mr-2 h-4 w-4" />
+                              Students without registrations
+                            </Button>
+                            {dateGroup.workshops.map((group) => (
                           <div key={`${dateGroup.dateKey}__${group.workshopId}`} className="rounded-md border border-gray-200 bg-white">
                             <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
                               <h4 className="font-medium text-gray-900">
@@ -601,10 +700,12 @@ const WorkshopRegistrations: React.FC = () => {
                               ))}
                             </div>
                           </div>
-                        ))}
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : allRegistrations.length > 0 ? (
                 <p className="text-sm text-gray-600">No registrations match the current search.</p>
