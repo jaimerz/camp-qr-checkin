@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Copy, RefreshCw } from 'lucide-react';
+import { ChevronDown, ChevronRight, Copy, RefreshCw } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import AuthGuard from '../components/AuthGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -54,6 +54,7 @@ const WorkshopRegistrations: React.FC = () => {
   const [deregisteringId, setDeregisteringId] = useState<string | null>(null);
   const [registrationSearchQuery, setRegistrationSearchQuery] = useState('');
   const [pendingWorkshopSwitch, setPendingWorkshopSwitch] = useState<Workshop | null>(null);
+  const [dateExpansionOverrides, setDateExpansionOverrides] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let unsubscribeWorkshops: (() => void) | undefined;
@@ -287,6 +288,33 @@ const WorkshopRegistrations: React.FC = () => {
     } catch (error) {
       console.error('Error copying workshop registrations:', error);
       showMessage('Failed to copy registrations.', 'error');
+    }
+  };
+
+  const copyParticipantsWithoutRegistrations = async (dateKey: string) => {
+    const registeredParticipantIds = new Set(
+      allRegistrations
+        .filter((registration) => registration.dateKey === dateKey)
+        .map((registration) => registration.participantId)
+    );
+    const participantsWithoutRegistrations = participants.filter(
+      (participant) => !registeredParticipantIds.has(participant.id)
+    );
+    const text = participantsWithoutRegistrations
+      .map((participant) => `${participant.name} - ${participant.church}`)
+      .join('\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+      showMessage(
+        participantsWithoutRegistrations.length > 0
+          ? `${participantsWithoutRegistrations.length} students without registrations copied to clipboard.`
+          : 'All students are registered for this date.',
+        'success'
+      );
+    } catch (error) {
+      console.error('Error copying students without workshop registrations:', error);
+      showMessage('Failed to copy students without registrations.', 'error');
     }
   };
 
@@ -556,10 +584,7 @@ const WorkshopRegistrations: React.FC = () => {
         <div className="space-y-6">
           <Card>
             <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-3">
-                <CardTitle>
-                  {selectedDate ? `Registrations for ${formatDateWithWeekday(selectedDate)}` : 'Registrations'}
-                </CardTitle>
+              <div>
                 <input
                   type="text"
                   value={registrationSearchQuery}
@@ -576,25 +601,53 @@ const WorkshopRegistrations: React.FC = () => {
             <CardContent>
               {registrationGroupsByDate.length > 0 ? (
                 <div className="space-y-4">
-                  {registrationGroupsByDate.map((dateGroup) => (
-                    <div key={dateGroup.dateKey} className="rounded-md border border-gray-200 bg-white">
-                      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-                        <h3 className="font-medium text-gray-900">
-                          {formatDateWithWeekday(parseDateKey(dateGroup.dateKey))}
-                        </h3>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2"
-                          title="Copy registrations for this date"
-                          aria-label={`Copy registrations for ${formatDateWithWeekday(parseDateKey(dateGroup.dateKey))}`}
-                          onClick={() => copyRegistrationsForDate(dateGroup.dateKey)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="space-y-4 p-3">
-                        {dateGroup.workshops.map((group) => (
+                  {registrationGroupsByDate.map((dateGroup) => {
+                    const isExpanded = dateExpansionOverrides[dateGroup.dateKey] ?? dateGroup.dateKey >= currentDateKey;
+                    const formattedDate = formatDateWithWeekday(parseDateKey(dateGroup.dateKey));
+
+                    return (
+                      <div key={dateGroup.dateKey} className="rounded-md border border-gray-200 bg-white">
+                        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                          <h3 className="font-medium text-gray-900">
+                            {formattedDate}
+                          </h3>
+                          <div className="flex items-center">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2"
+                              title="Copy registrations for this date"
+                              aria-label={`Copy registrations for ${formattedDate}`}
+                              onClick={() => copyRegistrationsForDate(dateGroup.dateKey)}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2"
+                              title={isExpanded ? 'Collapse date' : 'Expand date'}
+                              aria-label={`${isExpanded ? 'Collapse' : 'Expand'} registrations for ${formattedDate}`}
+                              aria-expanded={isExpanded}
+                              onClick={() => setDateExpansionOverrides((current) => ({
+                                ...current,
+                                [dateGroup.dateKey]: !isExpanded,
+                              }))}
+                            >
+                              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        </div>
+                        {isExpanded && <div className="space-y-4 p-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyParticipantsWithoutRegistrations(dateGroup.dateKey)}
+                          >
+                            <Copy className="mr-2 h-4 w-4" />
+                            Students without registrations
+                          </Button>
+                          {dateGroup.workshops.map((group) => (
                           <div key={`${dateGroup.dateKey}__${group.workshopId}`} className="rounded-md border border-gray-200 bg-white">
                             <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
                               <h4 className="font-medium text-gray-900">
@@ -641,10 +694,11 @@ const WorkshopRegistrations: React.FC = () => {
                               ))}
                             </div>
                           </div>
-                        ))}
+                          ))}
+                        </div>}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : allRegistrations.length > 0 ? (
                 <p className="text-sm text-gray-600">No registrations match the current search.</p>
