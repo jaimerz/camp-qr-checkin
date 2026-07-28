@@ -298,7 +298,7 @@ const WorkshopRegistrations: React.FC = () => {
         .map((registration) => registration.participantId)
     );
     const participantsWithoutRegistrations = participants.filter(
-      (participant) => !registeredParticipantIds.has(participant.id)
+      (participant) => participant.type === 'student' && !registeredParticipantIds.has(participant.id)
     );
     const text = participantsWithoutRegistrations
       .map((participant) => `${participant.name} - ${participant.church}`)
