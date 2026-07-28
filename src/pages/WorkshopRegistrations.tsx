@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { Copy, RefreshCw } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import AuthGuard from '../components/AuthGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -258,6 +258,36 @@ const WorkshopRegistrations: React.FC = () => {
     }
 
     setPendingWorkshopSwitch(null);
+  };
+
+  const copyRegistrationsForDate = async (dateKey: string) => {
+    const registrationsByWorkshop = allRegistrations
+      .filter((registration) => registration.dateKey === dateKey)
+      .reduce<Record<string, { name: string; registrations: WorkshopRegistration[] }>>((accumulator, registration) => {
+        accumulator[registration.workshopId] = accumulator[registration.workshopId] || {
+          name: registration.workshopName,
+          registrations: [],
+        };
+        accumulator[registration.workshopId].registrations.push(registration);
+        return accumulator;
+      }, {});
+    const text = Object.values(registrationsByWorkshop)
+      .sort((first, second) => first.name.localeCompare(second.name))
+      .map((workshop) => [
+        workshop.name,
+        ...workshop.registrations
+          .sort((first, second) => first.participantName.localeCompare(second.participantName))
+          .map((registration) => `${registration.participantName} - ${registration.participantChurch}`),
+      ].join('\n'))
+      .join('\n\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+      showMessage('Registrations copied to clipboard.', 'success');
+    } catch (error) {
+      console.error('Error copying workshop registrations:', error);
+      showMessage('Failed to copy registrations.', 'error');
+    }
   };
 
   const handleWorkshopRegistration = async (workshop: Workshop) => {
@@ -548,10 +578,20 @@ const WorkshopRegistrations: React.FC = () => {
                 <div className="space-y-4">
                   {registrationGroupsByDate.map((dateGroup) => (
                     <div key={dateGroup.dateKey} className="rounded-md border border-gray-200 bg-white">
-                      <div className="border-b border-gray-200 px-4 py-3">
+                      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
                         <h3 className="font-medium text-gray-900">
                           {formatDateWithWeekday(parseDateKey(dateGroup.dateKey))}
                         </h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2"
+                          title="Copy registrations for this date"
+                          aria-label={`Copy registrations for ${formatDateWithWeekday(parseDateKey(dateGroup.dateKey))}`}
+                          onClick={() => copyRegistrationsForDate(dateGroup.dateKey)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
                       </div>
                       <div className="space-y-4 p-3">
                         {dateGroup.workshops.map((group) => (
