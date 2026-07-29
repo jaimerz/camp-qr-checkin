@@ -56,6 +56,19 @@ const WorkshopRegistrations: React.FC = () => {
   const [pendingWorkshopSwitch, setPendingWorkshopSwitch] = useState<Workshop | null>(null);
   const [dateExpansionOverrides, setDateExpansionOverrides] = useState<Record<string, boolean>>({});
 
+  const participantSelectionStorageKey = eventId
+    ? `workshop-registration-selected-participant:${eventId}`
+    : null;
+
+  useEffect(() => {
+    if (!participantSelectionStorageKey) {
+      setSelectedParticipantId('');
+      return;
+    }
+
+    setSelectedParticipantId(sessionStorage.getItem(participantSelectionStorageKey) || '');
+  }, [participantSelectionStorageKey]);
+
   useEffect(() => {
     let unsubscribeWorkshops: (() => void) | undefined;
     let unsubscribeAllRegistrations: (() => void) | undefined;
@@ -262,6 +275,9 @@ const WorkshopRegistrations: React.FC = () => {
   };
 
   const clearSelectedParticipant = () => {
+    if (participantSelectionStorageKey) {
+      sessionStorage.removeItem(participantSelectionStorageKey);
+    }
     setSelectedParticipantId('');
     setParticipantQuery('');
     setShowParticipantSuggestions(false);
@@ -489,6 +505,9 @@ const WorkshopRegistrations: React.FC = () => {
                               className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
                               onMouseDown={(event) => {
                                 event.preventDefault();
+                                if (participantSelectionStorageKey) {
+                                  sessionStorage.setItem(participantSelectionStorageKey, participant.id);
+                                }
                                 setSelectedParticipantId(participant.id);
                                 setParticipantQuery('');
                                 setShowParticipantSuggestions(false);
