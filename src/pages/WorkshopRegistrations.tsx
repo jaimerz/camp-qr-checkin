@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, Copy, RefreshCw } from 'lucide-react';
+import { ChevronDown, ChevronRight, Copy, RefreshCw, UserRoundX } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import AuthGuard from '../components/AuthGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -261,6 +261,14 @@ const WorkshopRegistrations: React.FC = () => {
     setPendingWorkshopSwitch(null);
   };
 
+  const clearSelectedParticipant = () => {
+    setSelectedParticipantId('');
+    setParticipantQuery('');
+    setShowParticipantSuggestions(false);
+    setPendingWorkshopSwitch(null);
+    setMessage(null);
+  };
+
   const copyRegistrationsForDate = async (dateKey: string) => {
     const registrationsByWorkshop = allRegistrations
       .filter((registration) => registration.dateKey === dateKey)
@@ -351,7 +359,6 @@ const WorkshopRegistrations: React.FC = () => {
         showMessage(`Registered ${selectedParticipant.name} for ${workshop.name}.`, 'success');
       }
 
-      setSelectedParticipantId('');
       setParticipantQuery('');
       setPendingWorkshopSwitch(null);
     } catch (error) {
@@ -457,44 +464,55 @@ const WorkshopRegistrations: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Participant</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={participantQuery}
-                      onChange={(event) => {
-                        setParticipantQuery(event.target.value);
-                        setShowParticipantSuggestions(true);
-                        if (!event.target.value.trim()) {
-                          setSelectedParticipantId('');
-                        }
-                      }}
-                      onFocus={() => setShowParticipantSuggestions(true)}
-                      onBlur={() => {
-                        setTimeout(() => setShowParticipantSuggestions(false), 150);
-                      }}
-                      placeholder="Search participant by name or church"
-                      className="w-full rounded border border-gray-300 p-2"
-                    />
-                    {showParticipantSuggestions && filteredParticipants.length > 0 && (
-                      <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded border border-gray-200 bg-white shadow-lg">
-                        {filteredParticipants.slice(0, 20).map((participant) => (
-                          <button
-                            key={participant.id}
-                            type="button"
-                            className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
-                            onMouseDown={(event) => {
-                              event.preventDefault();
-                              setSelectedParticipantId(participant.id);
-                              setParticipantQuery('');
-                              setShowParticipantSuggestions(false);
-                            }}
-                          >
-                            <span className="font-medium">{participant.name}</span>
-                            <span className="ml-2 text-gray-500">{participant.church}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                  <div className="flex items-start gap-2">
+                    <div className="relative min-w-0 flex-1">
+                      <input
+                        type="text"
+                        value={participantQuery}
+                        onChange={(event) => {
+                          setParticipantQuery(event.target.value);
+                          setShowParticipantSuggestions(true);
+                        }}
+                        onFocus={() => setShowParticipantSuggestions(true)}
+                        onBlur={() => {
+                          setTimeout(() => setShowParticipantSuggestions(false), 150);
+                        }}
+                        placeholder="Search participant by name or church"
+                        className="w-full rounded border border-gray-300 p-2"
+                      />
+                      {showParticipantSuggestions && filteredParticipants.length > 0 && (
+                        <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded border border-gray-200 bg-white shadow-lg">
+                          {filteredParticipants.slice(0, 20).map((participant) => (
+                            <button
+                              key={participant.id}
+                              type="button"
+                              className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                              onMouseDown={(event) => {
+                                event.preventDefault();
+                                setSelectedParticipantId(participant.id);
+                                setParticipantQuery('');
+                                setShowParticipantSuggestions(false);
+                              }}
+                            >
+                              <span className="font-medium">{participant.name}</span>
+                              <span className="ml-2 text-gray-500">{participant.church}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={clearSelectedParticipant}
+                      disabled={!selectedParticipant && !participantQuery && !message}
+                      title="Clear selected participant and messages"
+                      aria-label="Clear selected participant and messages"
+                      className="shrink-0"
+                    >
+                      <UserRoundX className="mr-2 h-4 w-4" />
+                      Clear
+                    </Button>
                   </div>
                 </div>
               </div>
